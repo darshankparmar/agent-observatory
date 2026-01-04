@@ -2,24 +2,35 @@
 name = "agent-observatory"
 version = "0.1.0"
 description = "Observability primitives for AI agents (tracing and streaming introspection)"
-authors = [{ name = "Darshan Parmar", email = "darshanparmar.dev@gmail.com" }]
-license = "MIT"
 readme = "README.md"
 requires-python = ">=3.10"
+license = { file = "LICENSE" }
+
+authors = [
+    { name = "Darshan Parmar", email = "darshanparmar.dev@gmail.com" }
+]
+
+keywords = [
+    "observability",
+    "tracing",
+    "ai-agents",
+    "llm",
+    "streaming",
+    "opentelemetry",
+]
+
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-dependencies = [
-    "livekit-agents>=1.3.10",
-    "livekit-plugins-cartesia>=1.3.10",
-    "livekit-plugins-deepgram>=1.3.10",
-    "livekit-plugins-silero>=1.3.10",
-    "livekit-plugins-turn-detector>=1.3.10",
-    "python-dotenv>=1.2.1",
-] # Core has none
+
+dependencies = []  # Core has no dependencies
 
 [project.optional-dependencies]
 otel = [
@@ -27,7 +38,35 @@ otel = [
     "opentelemetry-sdk >=1.0.0",
     "opentelemetry-exporter-otlp-proto-grpc >=1.0.0",
 ]
-dev = ["pytest", "pytest-asyncio", "black", "ruff", "mypy", "types-setuptools"]
+
+livekit-example = [
+    "livekit-agents>=1.3.10",
+    "livekit-plugins-cartesia>=1.3.10",
+    "livekit-plugins-deepgram>=1.3.10",
+    "livekit-plugins-silero>=1.3.10",
+    "livekit-plugins-openai>=1.3.10",
+    "livekit-plugins-turn-detector>=1.3.10",
+    "python-dotenv>=1.2.1",
+]
+
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "black",
+    "ruff",
+    "mypy",
+    "types-setuptools",
+]
+
+all = [
+    "agent-observatory[otel,livekit-example,dev]"
+]
+
+[project.urls]
+Homepage = "https://github.com/darshankparmar/agent-observatory"
+Repository = "https://github.com/darshankparmar/agent-observatory"
+Issues = "https://github.com/darshankparmar/agent-observatory/issues"
+Security = "https://github.com/darshankparmar/agent-observatory/security"
 
 [build-system]
 requires = ["hatchling"]
@@ -38,3 +77,22 @@ packages = ["src/agent_observatory"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
+
+[tool.hatch.envs.default.scripts]
+lint = [
+  "black .",
+  "ruff check --fix .",
+  "mypy .",
+]
+
+test = [
+  "pytest",
+]
+
+build-all = [
+  "black .",
+  "ruff check --fix .",
+  "mypy .",
+  "pytest",
+  "hatch build",
+]

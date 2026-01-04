@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import logging
 
+# Internal logger for Agent Observatory (library-controlled, fail-open)
 logger = logging.getLogger("agent_observatory")
-logger.setLevel(logging.ERROR)  # Default; configurable
 
 
 def log_internal_error(msg: str) -> None:

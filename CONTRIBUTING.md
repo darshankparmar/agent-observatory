@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing to **Agent Observatory**.
 
-This project is an **infrastructure-level observability library**.  
+This project is an **infrastructure-level observability library**.
 Contributions are welcome, but must respect the core design principles outlined below.
 
 Please read this document carefully before opening issues or pull requests.
@@ -20,10 +20,10 @@ Agent Observatory is intentionally:
   No UI, no storage, no SaaS, no vendor lock-in.
 
 - **Composable**  
-  Must coexist with OpenTelemetry, logging frameworks, and existing infra.
+  Must coexist cleanly with OpenTelemetry, logging frameworks and existing infrastructure.
 
 - **Runtime-focused**  
-  Designed for agent systems, streaming workflows, and long-lived processes.
+  Designed for agent systems, streaming workflows and long-lived processes.
 
 If a change violates these principles, it is unlikely to be accepted.
 
@@ -31,11 +31,12 @@ If a change violates these principles, it is unlikely to be accepted.
 
 ## Design Guarantees (Non-Negotiable)
 
-The following are **hard constraints** of the project.
+The following constraints are **hard guarantees** of the project.
 
 ### 1. No Global Side Effects
 
 Agent Observatory **must not**:
+
 - configure OpenTelemetry
 - mutate global tracer providers
 - modify logging configuration
@@ -60,7 +61,7 @@ class Exporter:
         ...
 ````
 
-Async exporters are explicitly out of scope for v0.x.
+Async exporters are explicitly **out of scope for v0.x**.
 
 ---
 
@@ -82,10 +83,12 @@ If observability breaks agent execution, it is a bug.
 Agent Observatory supports two execution modes:
 
 * **Inline mode** (`inline=True`)
-  Deterministic, synchronous, used for scripts, examples, tests.
+  Deterministic and synchronous.
+  Used for scripts, tests and examples.
 
 * **Async mode** (`inline=False`)
-  Background worker, buffering, used for long-running services.
+  Background worker with buffering.
+  Used for long-running services.
 
 Contributions must respect this split and not blur the semantics.
 
@@ -93,7 +96,7 @@ Contributions must respect this split and not blur the semantics.
 
 ## What to Contribute
 
-We welcome contributions in the following areas:
+We welcome contributions in the following areas.
 
 ### ✅ Good Contribution Areas
 
@@ -119,7 +122,7 @@ The following will not be accepted in v0.x:
 * background threads in inline mode
 * opinionated defaults that remove user control
 
-These may be discussed for future versions, but not merged casually.
+These may be discussed for future versions, but should not be merged casually.
 
 ---
 
@@ -132,28 +135,55 @@ These may be discussed for future versions, but not merged casually.
 * `pytest`
 * `mypy`
 
-### Sync
+> **Note:**
+> The project uses **Hatch** for development workflows (linting, testing, builds).
+> Hatch is a **developer tool only** and is not a runtime dependency.
+
+Install Hatch if you want to use the provided scripts:
+
+```bash
+uv pip install hatch
+```
+
+---
+
+### Sync dependencies
 
 ```bash
 uv sync --all-extras
 ```
 
-### Run tests
+---
+
+### Common development commands (recommended)
+
+Using Hatch (preferred):
+
+```bash
+uv run hatch run lint
+uv run hatch run test
+uv run hatch run build-all
+```
+
+These commands run:
+
+* formatting (`black`)
+* linting (`ruff`)
+* type checking (`mypy`)
+* tests (`pytest`)
+* build verification (`hatch build`)
+
+You may also run the tools directly if you prefer.
+
+---
+
+Without Hatch:
 
 ```bash
 uv run pytest
-```
-
-### Type checking
-
-```bash
 uv run mypy .
-```
-
-### Format/Lint
-
-```bash
-uv run black . and uv run ruff check --fix .
+uv run black .
+uv run ruff check --fix .
 ```
 
 ---
@@ -185,9 +215,9 @@ If you change:
 You **must** update:
 
 * `README.md`
-* examples if applicable
+* examples (if applicable)
 
-Docs are part of the API contract.
+Documentation is part of the API contract.
 
 ---
 

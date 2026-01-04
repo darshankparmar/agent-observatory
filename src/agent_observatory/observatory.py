@@ -3,31 +3,38 @@ from __future__ import annotations
 import asyncio
 from typing import Optional
 
-from .session import SessionState, AgentSession
 from .context import AgentContext, set_current_session
 from .exporters.base import Exporter
 from .exporters.worker import (
     ExporterWorker,
-    InlineExporterWorker,
     ExporterWorkerProtocol,
+    InlineExporterWorker,
 )
+from .session import AgentSession, SessionState
 
 
 class Observatory:
-    def __init__(self, exporter: Exporter, *, inline: bool = False):
+    def __init__(self, exporter: Exporter, *, inline: bool = False) -> None:
         self._exporter = exporter
         self._inline = inline
 
-        self._worker_task: Optional[asyncio.Task] = None
+        self._worker: ExporterWorkerProtocol
+        self._worker_task: Optional[asyncio.Task[None]] = None
 
         if inline:
-            self._worker: ExporterWorkerProtocol = InlineExporterWorker(exporter)
+            self._worker = InlineExporterWorker(exporter)
         else:
             self._worker = ExporterWorker(exporter)
 
     async def start(self) -> None:
-        if not self._inline and self._worker_task is None:
-            self._worker_task = asyncio.create_task(self._worker.start())  # type: ignore
+        if self._inline:
+            return
+
+        worker = self._worker
+        assert isinstance(worker, ExporterWorker)
+
+        if self._worker_task is None:
+            self._worker_task = asyncio.create_task(worker.start())
 
     def start_session(self, ctx: AgentContext) -> AgentSession:
         state = SessionState(
@@ -40,6 +47,11 @@ class Observatory:
         return AgentSession(state, token, self._worker)
 
     async def shutdown(self) -> None:
-        if not self._inline:
-            await self._worker.stop()  # type: ignore
-            self._worker_task = None
+        if self._inline:
+            return
+
+        worker = self._worker
+        assert isinstance(worker, ExporterWorker)
+
+        await worker.stop()
+        self._worker_task = None

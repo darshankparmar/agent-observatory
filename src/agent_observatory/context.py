@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Dict, Any, Optional
 from contextvars import ContextVar, Token
+from dataclasses import dataclass
+from typing import Any, Dict, Optional
 
 
 @dataclass(frozen=True)
@@ -10,13 +10,17 @@ class AgentContext:
     session_id: str
     agent_id: str
     user_id: Optional[str] = None
-    metadata: Dict[str, Any] | None = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 _current_session: ContextVar[object | None] = ContextVar(
-    "current_session", default=None
+    "current_session",
+    default=None,
 )
-_current_span: ContextVar[str | None] = ContextVar("current_span", default=None)
+_current_span: ContextVar[str | None] = ContextVar(
+    "current_span",
+    default=None,
+)
 
 
 def get_current_session() -> object | None:

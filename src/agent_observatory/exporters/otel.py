@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from opentelemetry import trace
 from opentelemetry.context import Context
@@ -25,103 +25,116 @@ class OpenTelemetryExporter(Exporter):
     - Synchronous and fail-open
     """
 
-    def __init__(self, tracer: Tracer):
+    def __init__(self, tracer: Tracer) -> None:
         self._tracer = tracer
 
     # -----------------------------------------------------
     # Export entrypoint
     # -----------------------------------------------------
     def export(self, payload: Dict[str, Any]) -> None:
-        events: List[Dict[str, Any]] = payload.get("events", [])
+        """
+        Translate an Agent Observatory session envelope into
+        OpenTelemetry spans and events.
 
-        # span_id -> OTEL Span
-        spans: Dict[str, Span] = {}
+        Fail-open by design: exporter errors must never affect
+        agent execution.
+        """
+        try:
+            events: List[Dict[str, Any]] = payload.get("events", [])
 
-        # span_id -> parent_span_id
-        parents: Dict[str, Optional[str]] = {}
+            # span_id -> OTEL Span
+            spans: Dict[str, Span] = {}
 
-        # -------------------------------------------------
-        # Pass 1: collect parent relationships
-        # -------------------------------------------------
-        for ev in events:
-            if ev.get("type") == "span_start":
+            # span_id -> parent_span_id
+            parents: Dict[str, Optional[str]] = {}
+
+            # -------------------------------------------------
+            # Pass 1: collect parent relationships
+            # -------------------------------------------------
+            for ev in events:
+                if ev.get("type") == "span_start":
+                    trace_info = ev["trace"]
+                    parents[trace_info["span_id"]] = trace_info.get("parent_span_id")
+
+            # -------------------------------------------------
+            # Pass 2: start spans
+            # -------------------------------------------------
+            for ev in events:
+                if ev.get("type") != "span_start":
+                    continue
+
                 trace_info = ev["trace"]
-                parents[trace_info["span_id"]] = trace_info.get("parent_span_id")
+                payload_data = ev["payload"]
 
-        # -------------------------------------------------
-        # Pass 2: start spans
-        # -------------------------------------------------
-        for ev in events:
-            if ev.get("type") != "span_start":
-                continue
+                span_id = trace_info["span_id"]
+                parent_id = parents.get(span_id)
 
-            trace_info = ev["trace"]
-            payload_data = ev["payload"]
+                parent_span = spans.get(parent_id) if parent_id else None
 
-            span_id = trace_info["span_id"]
-            parent_id = parents.get(span_id)
+                # Explicit context handling to avoid ambient leakage
+                if parent_span is not None:
+                    parent_ctx: Context = trace.set_span_in_context(parent_span)
+                else:
+                    parent_ctx = Context()
 
-            parent_span = spans.get(parent_id) if parent_id else None
-            parent_ctx: Optional[Context] = (
-                trace.set_span_in_context(parent_span)
-                if parent_span is not None
-                else None
-            )
+                span = self._tracer.start_span(
+                    name=payload_data.get("name", "agent_span"),
+                    context=parent_ctx,
+                    kind=self._map_kind(payload_data.get("kind")),
+                )
 
-            span = self._tracer.start_span(
-                name=payload_data.get("name", "agent_span"),
-                context=parent_ctx,
-                kind=self._map_kind(payload_data.get("kind")),
-            )
+                for k, v in payload_data.get("attributes", {}).items():
+                    span.set_attribute(k, v)
 
-            # Attributes
-            for k, v in payload_data.get("attributes", {}).items():
-                span.set_attribute(k, v)
+                spans[span_id] = span
 
-            spans[span_id] = span
+            # -------------------------------------------------
+            # Pass 3: stream events → OTEL span events
+            # -------------------------------------------------
+            for ev in events:
+                if ev.get("type") != "stream_event":
+                    continue
 
-        # -------------------------------------------------
-        # Pass 3: stream events → OTEL span events
-        # -------------------------------------------------
-        for ev in events:
-            if ev.get("type") != "stream_event":
-                continue
+                trace_info = ev["trace"]
+                payload_data = ev["payload"]
 
-            trace_info = ev["trace"]
-            payload_data = ev["payload"]
+                span_opt = spans.get(trace_info["span_id"])
+                if span_opt is None:
+                    continue
 
-            span_opt = spans.get(trace_info["span_id"])
-            if span_opt is None:
-                continue
+                span = span_opt
 
-            span = span_opt
-            span.add_event(
-                name=payload_data.get("event", "stream.event"),
-                attributes=payload_data.get("attributes", {}),
-            )
+                span.add_event(
+                    name=payload_data.get("event", "stream.event"),
+                    attributes=payload_data.get("attributes", {}),
+                )
 
-        # -------------------------------------------------
-        # Pass 4: end spans
-        # -------------------------------------------------
-        for ev in events:
-            if ev.get("type") != "span_end":
-                continue
+            # -------------------------------------------------
+            # Pass 4: end spans
+            # -------------------------------------------------
+            for ev in events:
+                if ev.get("type") != "span_end":
+                    continue
 
-            span_id = ev["trace"]["span_id"]
-            span_opt = spans.get(span_id)
-            if span_opt is None:
-                continue
+                span_opt = spans.get(ev["trace"]["span_id"])
+                if span_opt is None:
+                    continue
 
-            span = span_opt
+                span = span_opt
 
-            payload_data = ev["payload"]
+                payload_data = ev["payload"]
 
-            if payload_data.get("status") == "error":
-                err = payload_data.get("error") or {}
-                span.record_exception(Exception(err.get("message", "agent error")))
-                span.set_status(Status(StatusCode.ERROR, err.get("message")))
+                if payload_data.get("status") == "error":
+                    err = payload_data.get("error") or {}
+                    message = err.get("message", "agent error")
 
-            span.end()
+                    span.record_exception(Exception(message))
+                    span.set_status(Status(StatusCode.ERROR, message))
+
+                span.end()
+
+        except Exception:
+            return
 
     # -----------------------------------------------------
     # Helpers

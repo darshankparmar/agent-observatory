@@ -8,23 +8,31 @@ from agent_observatory.internal.logging import log_internal_error
 
 
 class ExporterWorkerProtocol(Protocol):
+    """
+    Minimal protocol shared by all exporter workers.
+    """
+
     def enqueue(self, payload: dict) -> None: ...
+
+
+class AsyncExporterWorkerProtocol(ExporterWorkerProtocol, Protocol):
+    """
+    Protocol for async/background exporter workers.
+    """
+
+    async def start(self) -> None: ...
+    async def stop(self) -> None: ...
 
 
 class ExporterWorker:
     """
     Async, background exporter worker (production).
-
-    Intended for:
-    - long-running services
-    - agents
-    - servers
     """
 
-    def __init__(self, exporter: Exporter, max_queue_size: int = 100):
+    def __init__(self, exporter: Exporter, max_queue_size: int = 100) -> None:
         self._exporter = exporter
         self._queue: asyncio.Queue[dict] = asyncio.Queue(maxsize=max_queue_size)
-        self._task: Optional[asyncio.Task] = None
+        self._task: Optional[asyncio.Task[None]] = None
         self._running = False
 
     async def start(self) -> None:
@@ -35,7 +43,7 @@ class ExporterWorker:
 
     async def stop(self) -> None:
         self._running = False
-        if self._task:
+        if self._task is not None:
             self._task.cancel()
             try:
                 await self._task
@@ -62,13 +70,10 @@ class ExporterWorker:
 
 class InlineExporterWorker:
     """
-    Synchronous exporter worker (tests, scripts, CLIs).
-
-    GUARANTEE:
-    - export() is executed immediately and deterministically.
+    Synchronous exporter worker (inline mode).
     """
 
-    def __init__(self, exporter: Exporter):
+    def __init__(self, exporter: Exporter) -> None:
         self._exporter = exporter
 
     def enqueue(self, payload: dict) -> None:

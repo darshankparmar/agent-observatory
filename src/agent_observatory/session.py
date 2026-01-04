@@ -1,17 +1,16 @@
-from typing import Dict, Any, Optional
 from datetime import datetime, timezone
+from typing import Any, Dict, Optional
 
 from .buffering.ring_buffer import RingBuffer
-from .runtime.clock import now
-from .runtime.ids import new_trace_id, new_span_id, new_event_id
-from .runtime.errors import serialize_error
-from .events import TraceEvent, SCHEMA_VERSION
-from .context import (
-    reset_current_session,
-    get_current_span,
-)
-from .spans import SpanContext, StreamSpan
+from .context import get_current_span, reset_current_session
+from .events import SCHEMA_VERSION, TraceEvent
 from .internal.logging import log_internal_error
+from .runtime.clock import now
+from .runtime.errors import serialize_error
+from .runtime.ids import new_event_id, new_span_id, new_trace_id
+from .spans import SpanContext, StreamSpan
+
+DEFAULT_EVENT_BUFFER_SIZE = 10_000
 
 
 def _iso(ts: float) -> str:
@@ -25,19 +24,21 @@ class SessionState:
         agent_id: str,
         user_id: Optional[str],
         metadata: Dict[str, Any],
-    ):
+    ) -> None:
         self.session_id = session_id
         self.agent_id = agent_id
         self.user_id = user_id
         self.metadata = metadata
-        self.trace_id = new_trace_id()
-        self.event_buffer = RingBuffer(capacity=10_000)
-        self.start_time = now()
+
+        self.trace_id: str = new_trace_id()
+        self.start_time: float = now()
+        self.event_buffer = RingBuffer(capacity=DEFAULT_EVENT_BUFFER_SIZE)
+
         self._span_meta: dict[str, dict[str, str]] = {}
 
 
 class AgentSession:
-    def __init__(self, state: SessionState, token, exporter_worker):
+    def __init__(self, state: SessionState, token, exporter_worker) -> None:
         self._state = state
         self._token = token
         self._exporter_worker = exporter_worker
@@ -65,11 +66,11 @@ class AgentSession:
         parent_span_id = get_current_span()
 
         self._emit_span_start(
-            span_id,
-            parent_span_id,
-            name,
-            kind,
-            attributes or {},
+            span_id=span_id,
+            parent_span_id=parent_span_id,
+            name=name,
+            kind=kind,
+            attributes=attributes or {},
         )
 
         return SpanContext(span_id=span_id, session=self)
@@ -83,11 +84,11 @@ class AgentSession:
         parent_span_id = get_current_span()
 
         self._emit_span_start(
-            span_id,
-            parent_span_id,
-            name,
-            "stream",
-            attributes or {},
+            span_id=span_id,
+            parent_span_id=parent_span_id,
+            name=name,
+            kind="stream",
+            attributes=attributes or {},
         )
 
         return StreamSpan(span_id=span_id, session=self)
@@ -148,10 +149,7 @@ class AgentSession:
                     },
                 )
             )
-            self._state._span_meta[span_id] = {
-                "name": name,
-                "kind": kind,
-            }
+            self._state._span_meta[span_id] = {"name": name, "kind": kind}
         except Exception as e:
             log_internal_error(f"span_start failed: {e}")
 
@@ -179,6 +177,9 @@ class AgentSession:
                     },
                 )
             )
+
+            self._state._span_meta.pop(span_id, None)
+
         except Exception as e:
             log_internal_error(f"span_end failed: {e}")
 

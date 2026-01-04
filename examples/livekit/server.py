@@ -1,4 +1,15 @@
+"""
+LiveKit server entrypoint with Agent Observatory integration.
+
+This example demonstrates:
+- one LiveKit RTC session == one Agent Observatory session
+- server-mode agent lifecycle
+- structured metrics and tool observability
+- clean separation between infrastructure and agent logic
+"""
+
 import logging
+
 from dotenv import load_dotenv
 
 from livekit.agents import (
@@ -10,7 +21,7 @@ from livekit.agents import (
     metrics,
     room_io,
 )
-from livekit.plugins import cartesia, deepgram, silero
+from livekit.plugins import cartesia, deepgram, silero, openai
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 from agent_observatory import AgentContext
@@ -19,16 +30,23 @@ from agent import MyAgent
 
 logger = logging.getLogger("server")
 
+# Load environment variables for LiveKit / providers
 load_dotenv()
 
 # -----------------------------------------------------------------------------
-# LiveKit setup
+# LiveKit server setup
 # -----------------------------------------------------------------------------
 
 server = AgentServer()
 
 
-def prewarm(proc: JobProcess):
+def prewarm(proc: JobProcess) -> None:
+    """
+    Preload resources once per worker process.
+
+    Used here to load the VAD model so it can be reused
+    across multiple agent sessions.
+    """
     proc.userdata["vad"] = silero.VAD.load()
 
 
@@ -38,12 +56,18 @@ server.setup_fnc = prewarm
 @server.rtc_session()
 async def entrypoint(ctx: JobContext):
     """
-    One LiveKit RTC session == one Agent Observatory session
+    LiveKit RTC session entrypoint.
+
+    IMPORTANT:
+    - One LiveKit RTC session maps to one Agent Observatory session.
+    - Observability is scoped to the lifetime of this function.
     """
+    # --- Observatory setup ---
     observatory = create_observatory()
 
     room_sid = str(ctx.room.sid)
 
+    # --- Agent context ---
     agent_ctx = AgentContext(
         session_id=room_sid,
         agent_id="livekit-agent",
@@ -53,12 +77,14 @@ async def entrypoint(ctx: JobContext):
         },
     )
 
+    # --- Agent Observatory session ---
     with observatory.start_session(agent_ctx) as obs_session:
         logger.info("Agent session started")
 
+        # --- LiveKit agent session ---
         session: AgentSession = AgentSession(
             stt=deepgram.STT(),
-            llm="openai/gpt-4.1-mini",
+            llm=openai.LLM(model="openai/gpt-4.1-mini"),
             tts=cartesia.TTS(),
             turn_detection=MultilingualModel(),
             vad=ctx.proc.userdata["vad"],
@@ -71,21 +97,29 @@ async def entrypoint(ctx: JobContext):
 
         @session.on("metrics_collected")
         def _on_metrics_collected(ev):
+            """
+            Capture LiveKit usage metrics and attach them
+            as structured observability events.
+            """
             usage_collector.collect(ev.metrics)
 
-            # attach as a structured event
             with obs_session.span("metrics.snapshot", kind="agent_step") as span:
                 span.emit_event(
                     "metrics.collected",
                     ev.metrics,
                 )
 
-        async def log_usage():
+        async def log_usage() -> None:
+            """
+            Log usage summary on session shutdown.
+            """
             summary = usage_collector.get_summary()
             logger.info("Usage summary: %s", summary)
 
+        # Register shutdown callback
         ctx.add_shutdown_callback(log_usage)
 
+        # --- Start agent ---
         await session.start(
             agent=MyAgent(obs_session),
             room=ctx.room,
@@ -99,5 +133,9 @@ async def entrypoint(ctx: JobContext):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+
+    # Configure OpenTelemetry once at process startup
     configure_otel()
+
+    # Start LiveKit agent server
     cli.run_app(server)

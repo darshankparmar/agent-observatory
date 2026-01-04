@@ -1,25 +1,53 @@
+"""
+OpenTelemetry integration example.
+
+Demonstrates:
+- explicit OpenTelemetry configuration
+- integration via OpenTelemetryExporter
+- zero global state ownership by Agent Observatory
+- streaming + hierarchical spans
+
+Requirements:
+- running OpenTelemetry backend (e.g. OTEL Collector)
+- OTLP endpoint available at http://127.0.0.1:4317
+
+Run with:
+    uv run otel_demo.py
+"""
+
 import asyncio
 import random
 
+from importlib.metadata import version
+
 from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 
-from agent_observatory import Observatory, AgentContext
+from agent_observatory import AgentContext, Observatory
 from agent_observatory.exporters.otel import OpenTelemetryExporter
 
 
 # ---------------------------------------------------------
-# 1. Configure OpenTelemetry (once, at process start)
+# 1. Configure OpenTelemetry (application-owned)
 # ---------------------------------------------------------
-def configure_otel():
+def configure_otel() -> None:
+    """
+    Configure OpenTelemetry for the application.
+
+    IMPORTANT:
+    - Agent Observatory does NOT configure OpenTelemetry.
+    - This must be done by the application.
+    """
+    SERVICE_VERSION = version("agent-observatory")
+
     provider = TracerProvider(
         resource=Resource.create(
             {
                 "service.name": "agent-observatory-demo",
-                "service.version": "0.1.0",
+                "service.version": SERVICE_VERSION,
             }
         )
     )
@@ -39,20 +67,23 @@ def configure_otel():
 # ---------------------------------------------------------
 # 2. Simulated agent workflow
 # ---------------------------------------------------------
-async def run_agent(obs: Observatory):
+async def run_agent(obs: Observatory) -> None:
+    # --- Agent context ---
     ctx = AgentContext(
         session_id="session_001",
         agent_id="demo-agent",
+        user_id="demo-user",
         metadata={"env": "local"},
     )
 
-    # Root span for the entire agent run
+    # Root span owned by the application
     tracer = trace.get_tracer("agent-demo")
 
     with tracer.start_as_current_span("agent.run") as root:
         root.set_attribute("agent.id", ctx.agent_id)
         root.set_attribute("session.id", ctx.session_id)
 
+        # --- Agent Observatory session ---
         with obs.start_session(ctx) as session:
             # ---- Planning step
             with session.span("plan", kind="agent_step") as span:
@@ -79,6 +110,7 @@ async def run_agent(obs: Observatory):
                         raise RuntimeError("model timeout")
                     await asyncio.sleep(0.05)
             except Exception as e:
+                # Application-level error handling
                 root.record_exception(e)
                 root.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
 
@@ -86,17 +118,19 @@ async def run_agent(obs: Observatory):
 # ---------------------------------------------------------
 # 3. Entrypoint
 # ---------------------------------------------------------
-async def main():
+async def main() -> None:
+    # --- OpenTelemetry setup ---
     configure_otel()
 
     tracer = trace.get_tracer("agent-demo")
     exporter = OpenTelemetryExporter(tracer)
 
-    # Inline mode = simple & deterministic (great for examples)
+    # Inline mode for simplicity and determinism in examples
     obs = Observatory(exporter=exporter, inline=True)
 
     await run_agent(obs)
 
+    # Safe to call even in inline mode
     await obs.shutdown()
 
 

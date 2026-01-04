@@ -4,7 +4,7 @@ Agent Observatory takes security seriously, especially as it is intended to be u
 inside production systems and long-running agent processes.
 
 That said, this project is a **library**, not a hosted service.
-Its security model is therefore intentionally narrow and explicit.
+Its security model is intentionally narrow and explicit.
 
 ---
 
@@ -26,8 +26,8 @@ Agent Observatory is designed as an **observability primitive**.
 The following are considered security-relevant:
 
 - crashes or panics triggered by malformed inputs
-- unbounded memory growth due to observability logic
-- denial-of-service vectors caused by tracing or buffering
+- unbounded memory growth caused by observability logic
+- denial-of-service vectors introduced by tracing or buffering
 - unintended data leakage across sessions or spans
 - unsafe interaction with OpenTelemetry or exporter pipelines
 - vulnerabilities introduced by dependencies
@@ -40,11 +40,12 @@ The following are **explicitly out of scope**:
 
 - vulnerabilities in OpenTelemetry, Jaeger, or external backends
 - security of exported data once it leaves the process
-- encryption in transit or at rest (handled by exporters / infra)
-- application-level authorization or authentication
+- encryption in transit or at rest (handled by exporters / infrastructure)
+- application-level authentication or authorization
 - user-provided exporter implementations
 
 Agent Observatory does **not**:
+
 - accept untrusted network input
 - expose network services
 - persist data
@@ -58,13 +59,15 @@ If you believe you have found a security vulnerability:
 
 **Do not open a public issue.**
 
-Instead, please report it via GitHub’s **Private Security Advisory** feature:
+Instead, please report it using GitHub’s **Private Security Advisory** feature:
+
 https://github.com/darshankparmar/agent-observatory/security/advisories/new
 
 Please include:
+
 - a clear description of the issue
 - affected versions
-- a minimal reproduction if possible
+- a minimal reproduction (if possible)
 - potential impact assessment
 
 You will receive an acknowledgment within **72 hours**.
@@ -98,10 +101,11 @@ When using Agent Observatory in production:
 ## Final Note
 
 Agent Observatory is designed to be:
+
 - predictable
 - transparent
 - low-risk
 
-If observability ever compromises system security, that is considered a critical bug.
+If observability ever compromises system security, that is considered a **critical bug**.
 
 Thank you for helping keep the project safe.

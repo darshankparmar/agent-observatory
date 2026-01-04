@@ -5,6 +5,7 @@
 It provides structured tracing for:
 - agent steps
 - tool calls
+- LLM interactions
 - streaming workflows (tokens, audio, events)
 - hierarchical agent execution
 
@@ -127,10 +128,16 @@ Streaming events:
 
 Agent Observatory supports **two execution modes**.
 
-### Inline Mode (Scripts, CLIs, Examples)
+### Inline Mode
+
+**Use for:** Scripts, notebooks, tests, examples
 
 ```python
 obs = Observatory(exporter=exporter, inline=True)
+
+with obs.start_session(ctx) as session:
+    ...
+# automatic flush on exit
 ```
 
 **Characteristics**
@@ -140,23 +147,18 @@ obs = Observatory(exporter=exporter, inline=True)
 * exporter called immediately
 * ideal for short-lived processes
 
-Use this for:
-
-* examples
-* scripts
-* notebooks
-* tests
-* local debugging
-
 ---
 
-### Async Mode (Production Services)
+### Server Mode (Long-Running Processes)
+**Use for:** Production agents, servers, multi-session apps
 
 ```python
-obs = Observatory(exporter=exporter)
-await obs.start()
-...
-await obs.shutdown()
+obs = Observatory(exporter)  # inline=False
+await obs.start()            # start background worker
+
+# ... handle many sessions ...
+
+await obs.shutdown()         # graceful shutdown
 ```
 
 **Characteristics**
@@ -166,13 +168,7 @@ await obs.shutdown()
 * backpressure handling
 * designed for long-running agents
 
-Use this for:
-
-* servers
-* always-on agents
-* multi-session processes
-
-⚠️ **Async mode is NOT suitable for short scripts without an explicit shutdown.**
+⚠️ **Important:** Server mode requires explicit shutdown. Use inline mode for short scripts.
 
 ---
 
@@ -269,9 +265,8 @@ with obs.start_session(ctx) as session:
 
 * Internal event timestamps use a **monotonic clock**
 * Used for ordering and duration
-* Not intended for wall-clock correlation
 
-Exporters (e.g. OTEL) are responsible for translating timestamps as needed.
+Exporters (e.g. OTEL) are responsible for mapping timestamps to wall-clock time if needed.
 
 ---
 
