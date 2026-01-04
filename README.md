@@ -1,5 +1,9 @@
 # Agent Observatory
 
+[![PyPI version](https://img.shields.io/pypi/v/agent-observatory.svg)](https://pypi.org/project/agent-observatory/)
+[![Python versions](https://img.shields.io/pypi/pyversions/agent-observatory.svg)](https://pypi.org/project/agent-observatory/)
+[![License](https://img.shields.io/pypi/l/agent-observatory.svg)](LICENSE)
+
 **Agent Observatory** is a lightweight, fail-open observability layer for **AI agents and agent-based systems**.
 
 It provides structured tracing for:
@@ -17,7 +21,6 @@ Agent Observatory is designed as **infrastructure**, not a platform:
 
 It emits **portable trace envelopes** that can be exported to JSON, OpenTelemetry, or custom backends.
 
----
 
 ## Why Agent Observatory?
 
@@ -36,7 +39,6 @@ Agent Observatory focuses on:
 - **minimal overhead**
 - **composability with existing observability stacks**
 
----
 
 ## Core Concepts
 
@@ -55,7 +57,6 @@ A session:
 * flushes automatically on exit
 * never throws on failure (fail-open)
 
----
 
 ### Spans
 
@@ -75,7 +76,6 @@ Supported span types include:
 
 Spans can be nested and are tracked via context propagation.
 
----
 
 ### Streaming Events
 
@@ -93,7 +93,6 @@ Streaming events:
 * preserve ordering
 * export cleanly to OTEL span events
 
----
 
 ## Architecture Overview
 
@@ -122,7 +121,6 @@ Streaming events:
 └───────────────────────┘
 ```
 
----
 
 ## Execution Modes (Important)
 
@@ -147,7 +145,6 @@ with obs.start_session(ctx) as session:
 * exporter called immediately
 * ideal for short-lived processes
 
----
 
 ### Server Mode (Long-Running Processes)
 **Use for:** Production agents, servers, multi-session apps
@@ -170,7 +167,6 @@ await obs.shutdown()         # graceful shutdown
 
 ⚠️ **Important:** Server mode requires explicit shutdown. Use inline mode for short scripts.
 
----
 
 ## Exporters
 
@@ -189,7 +185,6 @@ class Exporter:
         ...
 ```
 
----
 
 ### JSON Exporter
 
@@ -199,7 +194,6 @@ Useful for debugging and local inspection.
 from agent_observatory.exporters.json import JsonExporter
 ```
 
----
 
 ### OpenTelemetry Exporter
 
@@ -216,7 +210,6 @@ This is intentional and required for:
 * framework compatibility
 * production safety
 
----
 
 #### OpenTelemetry Example (Recommended)
 
@@ -259,7 +252,6 @@ with obs.start_session(ctx) as session:
         pass
 ```
 
----
 
 ## Timestamp Semantics
 
@@ -268,7 +260,6 @@ with obs.start_session(ctx) as session:
 
 Exporters (e.g. OTEL) are responsible for mapping timestamps to wall-clock time if needed.
 
----
 
 ## Failure Semantics
 
@@ -281,7 +272,6 @@ Agent Observatory is **fail-open by design**.
 
 This is intentional.
 
----
 
 ## What Agent Observatory Is NOT
 
@@ -293,7 +283,6 @@ This is intentional.
 
 It is a **runtime observability primitive**.
 
----
 
 ## When to Use Agent Observatory
 
@@ -305,7 +294,6 @@ Use it if you are building:
 * LiveKit / real-time agents
 * tool-heavy autonomous workflows
 
----
 
 ## Versioning & Stability
 
@@ -314,7 +302,6 @@ Use it if you are building:
 * Exporter contract is stable
 * Inline vs async semantics are stable
 
----
 
 ## Contributing
 
@@ -329,8 +316,11 @@ Please respect:
 
 See `CONTRIBUTING.md`.
 
----
 
-## License
+## Feedback Welcome
 
-MIT License.
+Agent Observatory is early-stage infrastructure.
+
+Design feedback, critique and edge-case discussion are very welcome.
+Please open a Discussion or Issue.
+
