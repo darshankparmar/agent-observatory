@@ -103,8 +103,8 @@ async def entrypoint(ctx: JobContext):
             """
             usage_collector.collect(ev.metrics)
 
-            with obs_session.span("metrics.snapshot", kind="agent_step") as span:
-                span.emit_event(
+            with obs_session.agent_step("metrics.snapshot") as span:
+                span.event(
                     "metrics.collected",
                     ev.metrics,
                 )

@@ -8,7 +8,7 @@ def test_high_frequency_streaming(
     with observatory.start_session(agent_ctx) as session:
         with session.stream("audio") as stream:
             for i in range(1_000):
-                stream.emit_event(
+                stream.event(
                     "chunk",
                     {"seq": i, "bytes": 4096},
                 )

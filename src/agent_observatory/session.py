@@ -75,6 +75,30 @@ class AgentSession:
 
         return SpanContext(span_id=span_id, session=self)
 
+    def agent_step(
+        self,
+        name: str,
+        attributes: Optional[Dict[str, Any]] = None,
+    ) -> SpanContext:
+        """Helper to create an agent_step span."""
+        return self.span(name, kind="agent_step", attributes=attributes)
+
+    def tool_call(
+        self,
+        name: str,
+        attributes: Optional[Dict[str, Any]] = None,
+    ) -> SpanContext:
+        """Helper to create a tool_call span."""
+        return self.span(name, kind="tool_call", attributes=attributes)
+
+    def llm_call(
+        self,
+        name: str,
+        attributes: Optional[Dict[str, Any]] = None,
+    ) -> SpanContext:
+        """Helper to create an llm_call span."""
+        return self.span(name, kind="llm_call", attributes=attributes)
+
     def stream(
         self,
         name: str,

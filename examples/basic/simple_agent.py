@@ -36,12 +36,12 @@ def run_agent() -> None:
     # Session automatically flushes on exit.
     with obs.start_session(ctx) as session:
         # --- Planning step ---
-        with session.span("plan", kind="agent_step"):
+        with session.agent_step("plan"):
             # simulate planning work
             pass
 
         # --- Execution step ---
-        with session.span("execute", kind="agent_step"):
+        with session.agent_step("execute"):
             # simulate execution work
             pass
 

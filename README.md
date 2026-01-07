@@ -3,6 +3,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/agent-observatory.svg)](https://pypi.org/project/agent-observatory/)
 [![Python versions](https://img.shields.io/pypi/pyversions/agent-observatory.svg)](https://pypi.org/project/agent-observatory/)
 [![License](https://img.shields.io/pypi/l/agent-observatory.svg)](LICENSE)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/darshankparmar/agent-observatory)
 
 **Agent Observatory** is a lightweight, fail-open observability layer for **AI agents and agent-based systems**.
 
@@ -48,7 +49,7 @@ A **session** represents a single agent run.
 ```python
 with observatory.start_session(ctx) as session:
     ...
-````
+```
 
 A session:
 
@@ -63,16 +64,16 @@ A session:
 Spans represent logical units of agent work.
 
 ```python
-with session.span("plan", kind="agent_step"):
+with session.agent_step("plan"):
     ...
 ```
 
-Supported span types include:
+Supported span helpers include:
 
-* `agent_step`
-* `tool_call`
-* `llm_call`
-* `stream`
+* `agent_step()`
+* `tool_call()`
+* `llm_call()`
+* `stream()`
 
 Spans can be nested and are tracked via context propagation.
 
@@ -83,7 +84,7 @@ Streams are first-class.
 
 ```python
 with session.stream("audio_stream") as stream:
-    stream.emit_event("chunk", {"seq": 1})
+    stream.event("chunk", {"seq": 1})
 ```
 
 Streaming events:
@@ -248,7 +249,7 @@ ctx = AgentContext(
 )
 
 with obs.start_session(ctx) as session:
-    with session.span("plan", kind="agent_step"):
+    with session.agent_step("plan"):
         pass
 ```
 
@@ -323,4 +324,3 @@ Agent Observatory is early-stage infrastructure.
 
 Design feedback, critique and edge-case discussion are very welcome.
 Please open a Discussion or Issue.
-

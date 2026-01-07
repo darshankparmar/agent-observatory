@@ -86,15 +86,15 @@ async def run_agent(obs: Observatory) -> None:
         # --- Agent Observatory session ---
         with obs.start_session(ctx) as session:
             # ---- Planning step
-            with session.span("plan", kind="agent_step") as span:
-                span.emit_event("planning.started")
+            with session.agent_step("plan") as span:
+                span.event("planning.started")
                 await asyncio.sleep(0.1)
-                span.emit_event("planning.completed")
+                span.event("planning.completed")
 
             # ---- Streaming output (tokens / audio / chunks)
             with session.stream("response_stream") as stream:
                 for i in range(5):
-                    stream.emit_event(
+                    stream.event(
                         "chunk",
                         {
                             "index": i,
@@ -105,7 +105,7 @@ async def run_agent(obs: Observatory) -> None:
 
             # ---- Final step with possible error
             try:
-                with session.span("finalize", kind="agent_step"):
+                with session.agent_step("finalize"):
                     if random.random() < 0.3:
                         raise RuntimeError("model timeout")
                     await asyncio.sleep(0.05)

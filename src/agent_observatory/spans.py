@@ -12,7 +12,7 @@ class SpanContext:
         self._session = session
         self._token: Token[str | None] | None = None
 
-    def emit_event(
+    def _emit_event(
         self,
         event: str,
         attributes: Dict[str, Any] | None = None,
@@ -22,6 +22,14 @@ class SpanContext:
             event=event,
             attributes=attributes or {},
         )
+
+    def event(
+        self,
+        name: str,
+        attributes: Dict[str, Any] | None = None,
+    ) -> None:
+        """Emit a structured event within this span."""
+        self._emit_event(name, attributes)
 
     def __enter__(self) -> "SpanContext":
         self._token = set_current_span(self.span_id)
@@ -49,7 +57,7 @@ class StreamSpan:
         self.span_id = span_id
         self._session = session
 
-    def emit_event(
+    def _emit_event(
         self,
         event: str,
         attributes: Dict[str, Any] | None = None,
@@ -59,6 +67,14 @@ class StreamSpan:
             event=event,
             attributes=attributes or {},
         )
+
+    def event(
+        self,
+        name: str,
+        attributes: Dict[str, Any] | None = None,
+    ) -> None:
+        """Emit a structured event within this stream."""
+        self._emit_event(name, attributes)
 
     def __enter__(self) -> "StreamSpan":
         return self

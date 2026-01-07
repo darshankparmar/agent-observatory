@@ -39,7 +39,7 @@ class MyAgent(Agent):
         We wrap the lifecycle hook in a span to make
         agent startup visible in traces.
         """
-        with self.obs.span("agent.on_enter", kind="agent_step"):
+        with self.obs.agent_step("agent.on_enter"):
             self.session.generate_reply(allow_interruptions=False)
 
     @function_tool
@@ -58,9 +58,9 @@ class MyAgent(Agent):
         - structured input/output events
         - separation of business logic and observability
         """
-        with self.obs.span("tool.lookup_weather", kind="tool_call") as span:
+        with self.obs.tool_call("tool.lookup_weather") as span:
             # --- Tool input ---
-            span.emit_event(
+            span.event(
                 "tool.input",
                 {
                     "location": location,
@@ -75,7 +75,7 @@ class MyAgent(Agent):
             result = "Sunny, 70 degrees"
 
             # --- Tool output ---
-            span.emit_event(
+            span.event(
                 "tool.output",
                 {
                     "result": result,

@@ -43,7 +43,7 @@ def run_streaming_agent() -> None:
             },
         ) as stream:
             for i in range(1_000):
-                stream.emit_event(
+                stream.event(
                     "audio.chunk",
                     {
                         "seq": i,
