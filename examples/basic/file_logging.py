@@ -24,7 +24,7 @@ from agent_observatory import (
 def run_agent() -> None:
     # Use FileExporter for CLI verification
     exporter = FileExporter("logs/traces.jsonl")
-    obs = Observatory(exporter=exporter, inline=True)
+    obs = Observatory(exporters=exporter, inline=True)
 
     ctx = AgentContext(session_id="cli-demo-1", agent_id="demo-agent", user_id="dev-user")
 

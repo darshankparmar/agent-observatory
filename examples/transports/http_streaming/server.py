@@ -171,7 +171,7 @@ def main() -> None:
     )
 
     # Use async mode for production server
-    obs = Observatory(exporter=exporters, inline=False)
+    obs = Observatory(exporters=exporters, inline=False)
 
     print("Starting HTTP streaming server on http://localhost:8000")
     print("Try: curl -N http://localhost:8000/chat/stream")

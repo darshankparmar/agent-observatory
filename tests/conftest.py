@@ -21,7 +21,7 @@ def exporter() -> InMemoryExporter:
 
 @pytest.fixture
 def observatory(exporter: InMemoryExporter) -> Observatory:
-    return Observatory(exporter=exporter, inline=True)
+    return Observatory(exporters=exporter, inline=True)
 
 
 @pytest.fixture

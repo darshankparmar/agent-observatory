@@ -20,7 +20,7 @@ from agent_observatory import (
 def run_agent() -> None:
     # Immediate feedback in terminal
     exporter = ConsoleExporter()
-    obs = Observatory(exporter=exporter, inline=True)
+    obs = Observatory(exporters=exporter, inline=True)
 
     ctx = AgentContext(session_id="live-demo-1", agent_id="demo-agent", user_id="dev-user")
 

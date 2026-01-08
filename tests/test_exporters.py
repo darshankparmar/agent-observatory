@@ -8,7 +8,7 @@ def test_file_exporter_appends_jsonl(agent_ctx: AgentContext, tmp_path: Path) ->
     log_file = tmp_path / "test.jsonl"
 
     exporter = FileExporter(str(log_file))
-    obs = Observatory(exporter=exporter, inline=True)
+    obs = Observatory(exporters=exporter, inline=True)
 
     with obs.start_session(agent_ctx) as session:
         with session.agent_step("step1"):
@@ -25,7 +25,7 @@ def test_file_exporter_appends_jsonl(agent_ctx: AgentContext, tmp_path: Path) ->
 
 def test_console_exporter_does_not_crash(agent_ctx: AgentContext) -> None:
     exporter = ConsoleExporter()
-    obs = Observatory(exporter=exporter, inline=True)
+    obs = Observatory(exporters=exporter, inline=True)
 
     # We just ensure it doesn't raise anything when printing
     with obs.start_session(agent_ctx) as session:

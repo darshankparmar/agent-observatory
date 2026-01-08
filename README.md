@@ -133,7 +133,7 @@ Agent Observatory supports **two execution modes**.
 **Use for:** Scripts, notebooks, tests, examples
 
 ```python
-obs = Observatory(exporter=exporter, inline=True)
+obs = Observatory(exporters=exporter, inline=True)
 
 with obs.start_session(ctx) as session:
     ...
@@ -152,12 +152,12 @@ with obs.start_session(ctx) as session:
 **Use for:** Production agents, servers, multi-session apps
 
 ```python
-obs = Observatory(exporter)  # inline=False
-await obs.start()            # start background worker
+obs = Observatory(exporters)  # inline=False
+await obs.start()             # start background worker
 
 # ... handle many sessions ...
 
-await obs.shutdown()         # graceful shutdown
+await obs.shutdown()          # graceful shutdown
 ```
 
 **Characteristics**
@@ -197,7 +197,7 @@ Useful for debugging and local inspection.
 from agent_observatory import JSONExporter
 
 exporter = JSONExporter()
-obs = Observatory(exporter=exporter, inline=True)
+obs = Observatory(exporters=exporter, inline=True)
 ```
 
 #### Console Exporter
@@ -208,7 +208,7 @@ Provides immediate, pretty-printed terminal feedback for development.
 from agent_observatory import ConsoleExporter
 
 exporter = ConsoleExporter()
-obs = Observatory(exporter=exporter, inline=True)
+obs = Observatory(exporters=exporter, inline=True)
 ```
 
 #### File Exporter
@@ -219,7 +219,7 @@ Writes traces to disk in JSONL format, compatible with the `obs-view` CLI tool.
 from agent_observatory import FileExporter
 
 exporter = FileExporter("logs/traces.jsonl")
-obs = Observatory(exporter=exporter, inline=True)
+obs = Observatory(exporters=exporter, inline=True)
 ```
 
 #### OpenTelemetry Exporter
@@ -265,7 +265,7 @@ trace.set_tracer_provider(provider)
 tracer = trace.get_tracer("agent-demo")
 exporter = OpenTelemetryExporter(tracer)
 
-obs = Observatory(exporter=exporter, inline=True)
+obs = Observatory(exporters=exporter, inline=True)
 
 ctx = AgentContext(
     session_id="demo-session",
@@ -297,7 +297,7 @@ exporters = list[Exporter][
     OpenTelemetryExporter(tracer),      # Production monitoring
 ]
 
-obs = Observatory(exporter=exporters, inline=True)
+obs = Observatory(exporters=exporters, inline=True)
 ```
 
 **Key Features:**
@@ -392,16 +392,16 @@ Use it if you are building:
 
 ```bash
 # Core only (zero dependencies)
-pip install agent-observatory
+uv pip install agent-observatory
 
 # With OpenTelemetry
-pip install agent-observatory[otel]
+uv pip install agent-observatory[otel]
 
 # With CLI tool
-pip install agent-observatory[cli]
+uv pip install agent-observatory[cli]
 
 # All extras
-pip install agent-observatory[all]
+uv pip install agent-observatory[all]
 ```
 
 ## Versioning & Stability

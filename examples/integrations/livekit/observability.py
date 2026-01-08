@@ -60,4 +60,4 @@ def create_observatory() -> Observatory:
     exporter = OpenTelemetryExporter(tracer)
 
     # Inline mode ensures deterministic export per agent run
-    return Observatory(exporter=exporter, inline=True)
+    return Observatory(exporters=exporter, inline=True)

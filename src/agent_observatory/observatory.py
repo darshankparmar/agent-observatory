@@ -17,7 +17,7 @@ class Observatory:
     """
 
     def __init__(
-        self, exporter: Exporter | list[Exporter] | MultiExporter, *, inline: bool = False
+        self, exporters: Exporter | list[Exporter] | MultiExporter, *, inline: bool = False
     ) -> None:
         """
         Initialize the observatory.
@@ -27,20 +27,20 @@ class Observatory:
             inline: If True, exports happen synchronously on the same thread (ideal for CLI/scripts).
                    If False, exports happen on a background thread.
         """
-        self._exporter: Exporter | MultiExporter
-        if isinstance(exporter, list):
-            self._exporter = MultiExporter(exporter)
+        self._exporters: Exporter | MultiExporter
+        if isinstance(exporters, list):
+            self._exporters = MultiExporter(exporters)
         else:
-            self._exporter = exporter
+            self._exporters = exporters
         self._inline = inline
 
         self._worker: ExporterWorkerProtocol
         self._worker_task: asyncio.Task[None] | None = None
 
         if inline:
-            self._worker = InlineExporterWorker(self._exporter)
+            self._worker = InlineExporterWorker(self._exporters)
         else:
-            self._worker = ExporterWorker(self._exporter)
+            self._worker = ExporterWorker(self._exporters)
 
     async def start(self) -> None:
         if self._inline:

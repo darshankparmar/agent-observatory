@@ -107,7 +107,7 @@ def main() -> None:
 
     # Create observatory with multiple exporters
     multi_exporter = create_multi_exporter()
-    obs = Observatory(exporter=multi_exporter, inline=True)
+    obs = Observatory(exporters=multi_exporter, inline=True)
 
     # Create context
     ctx = AgentContext(
@@ -138,7 +138,7 @@ def main() -> None:
         ]
     )
 
-    obs_error = Observatory(exporter=error_exporter, inline=True)
+    obs_error = Observatory(exporters=error_exporter, inline=True)
 
     with obs_error.start_session(ctx) as session:
         with session.agent_step("error_test") as span:

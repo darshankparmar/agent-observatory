@@ -124,7 +124,7 @@ async def main() -> None:
     exporter = OpenTelemetryExporter(tracer)
 
     # Inline mode for simplicity and determinism in examples
-    obs = Observatory(exporter=exporter, inline=True)
+    obs = Observatory(exporters=exporter, inline=True)
 
     await run_agent(obs)
 

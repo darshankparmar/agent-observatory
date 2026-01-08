@@ -132,7 +132,7 @@ async def serve() -> None:
             FileExporter("logs/grpc_traces.jsonl"),
         ]
     )
-    obs = Observatory(exporter=exporters, inline=True)
+    obs = Observatory(exporters=exporters, inline=True)
 
     # Create server
     server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
