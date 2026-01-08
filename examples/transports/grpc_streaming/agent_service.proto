@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package agent_service;
+
+// Agent service for streaming interactions
+service AgentService {
+  // Bidirectional streaming for real-time agent interaction
+  rpc StreamChat(stream ChatRequest) returns (stream ChatResponse);
+}
+
+// Request message from client
+message ChatRequest {
+  string session_id = 1;
+  string message = 2;
+  map<string, string> metadata = 3;
+}
+
+// Response message from agent
+message ChatResponse {
+  string content = 1;
+  bool is_complete = 2;
+  map<string, string> metadata = 3;
+}

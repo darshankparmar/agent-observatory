@@ -33,6 +33,9 @@ Before running, ensure:
 - an OTEL backend is running (optional but recommended)
 
 ```bash
+# Install dependencies
+uv pip install -r requirements.txt
+
 uv run server.py console
 ```
 

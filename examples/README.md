@@ -15,7 +15,7 @@ Minimal usage of spans and exporters.
 - [`realtime_debug.py`](basic/realtime_debug.py): **New** Live pretty-print feedback.
 - [`file_logging.py`](basic/file_logging.py): **New** JSONL logging for the `obs-view` CLI.
 
-**Start here** if you’re new to Agent Observatory.
+**Start here** if you're new to Agent Observatory.
 
 ### `streaming/`
 Streaming-first observability.
@@ -26,24 +26,25 @@ Streaming-first observability.
 
 Use this for token streams, audio, or real-time agent output.
 
-### `opentelemetry/`
-OpenTelemetry integration.
+### `transports/`
+Real-time communication over different protocols.
 
-- external OTEL configuration
-- OpenTelemetryExporter usage
-- zero global state ownership
+- [`http_streaming/`](transports/http_streaming/): HTTP streaming with SSE
+- [`grpc_streaming/`](transports/grpc_streaming/): Type-safe gRPC streaming
+- [`sse_streaming/`](transports/sse_streaming/): Browser-native Server-Sent Events
 
-Recommended for production observability stacks.
+Choose based on your infrastructure needs - all maintain full observability.
 
-### `livekit/`
-Real-world LiveKit agent example.
+### `integrations/`
+Third-party service integrations.
 
-- long-running server
-- agent lifecycle instrumentation
-- metrics as structured events
-- realistic production setup
+- [`opentelemetry/`](integrations/opentelemetry/): Production monitoring stacks
+- [`livekit/`](integrations/livekit/): Real-time voice and video agents
 
-This is the most advanced example.
+### `multi_exporter/`
+Simultaneous export to multiple backends.
+
+- [`multi_demo.py`](multi_exporter/multi_demo.py): Console + file + OTEL
 
 ## Running Examples
 

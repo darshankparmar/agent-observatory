@@ -39,16 +39,6 @@ otel = [
     "opentelemetry-exporter-otlp-proto-grpc >=1.0.0",
 ]
 
-livekit-example = [
-    "livekit-agents>=1.3.10",
-    "livekit-plugins-cartesia>=1.3.10",
-    "livekit-plugins-deepgram>=1.3.10",
-    "livekit-plugins-silero>=1.3.10",
-    "livekit-plugins-openai>=1.3.10",
-    "livekit-plugins-turn-detector>=1.3.10",
-    "python-dotenv>=1.2.1",
-]
-
 cli = [
     "rich>=10.0.0",
 ]
@@ -62,8 +52,24 @@ dev = [
 ]
 
 all = [
-    "agent-observatory[otel,livekit-example,cli,dev]"
+    "agent-observatory[otel,cli,dev]"
 ]
+
+[project.scripts]
+obs-view = "agent_observatory.cli.main:main"
+
+[project.urls]
+Homepage = "https://github.com/darshankparmar/agent-observatory"
+Repository = "https://github.com/darshankparmar/agent-observatory"
+Issues = "https://github.com/darshankparmar/agent-observatory/issues"
+Security = "https://github.com/darshankparmar/agent-observatory/security"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_observatory"]
 
 [tool.ruff]
 line-length = 100
@@ -97,22 +103,11 @@ addopts = ["--import-mode=importlib", "--ignore=examples"]
 [tool.mypy]
 strict = true
 disallow_any_generics = false
+mypy_path = "src" 
 
-[project.scripts]
-obs-view = "agent_observatory.cli.main:main"
-
-[project.urls]
-Homepage = "https://github.com/darshankparmar/agent-observatory"
-Repository = "https://github.com/darshankparmar/agent-observatory"
-Issues = "https://github.com/darshankparmar/agent-observatory/issues"
-Security = "https://github.com/darshankparmar/agent-observatory/security"
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/agent_observatory"]
+exclude = [
+    "examples/.*",
+]
 
 [tool.hatch.envs.default.scripts]
 lint = [

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SSE Streaming Agent</title>
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f6f7f9;
+      margin: 0;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      padding: 24px;
+    }
+
+    h1 { margin-top: 0; }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    input {
+      flex: 1;
+      padding: 10px;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 10px 16px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-bottom: 12px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .status.idle { color: #374151; }
+    .status.streaming { color: #92400e; }
+    .status.done { color: #065f46; }
+    .status.error { color: #991b1b; }
+
+    .log {
+      border: 1px solid #e5e7eb;
+      background: #fafafa;
+      border-radius: 4px;
+      padding: 12px;
+      height: 400px;
+      overflow-y: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 13px;
+    }
+
+    .event { margin-bottom: 6px; }
+    .agent { color: #111827; }
+    .complete { color: #065f46; font-weight: 600; }
+    .error { color: #991b1b; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>SSE Streaming Agent</h1>
+
+    <div class="controls">
+      <input id="message" placeholder="Enter a message…" />
+      <button id="sendBtn">Send</button>
+      <button id="stopBtn" disabled>Stop</button>
+    </div>
+
+    <div id="status" class="status idle">Idle</div>
+    <div id="log" class="log"></div>
+  </div>
+
+  <script>
+    let source = null;
+
+    const logEl = document.getElementById("log");
+    const statusEl = document.getElementById("status");
+    const sendBtn = document.getElementById("sendBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const messageEl = document.getElementById("message");
+
+    function setStatus(text, cls) {
+      statusEl.textContent = text;
+      statusEl.className = `status ${cls}`;
+    }
+
+    function append(text, cls = "agent") {
+      const div = document.createElement("div");
+      div.className = `event ${cls}`;
+      div.textContent = text;
+      logEl.appendChild(div);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function stopStream(reason = "Stopped by user") {
+      if (source) {
+        source.close();
+        source = null;
+      }
+      setStatus(reason, "idle");
+      sendBtn.disabled = false;
+      stopBtn.disabled = true;
+    }
+
+    function send() {
+      const msg = messageEl.value.trim();
+      if (!msg) return;
+
+      stopStream();
+      logEl.innerHTML = "";
+
+      sendBtn.disabled = true;
+      stopBtn.disabled = false;
+
+      setStatus("Streaming…", "streaming");
+
+      const sessionId = "sse-" + Date.now();
+
+      source = new EventSource(
+        `/chat/stream?session_id=${sessionId}&message=${encodeURIComponent(msg)}`
+      );
+
+      source.addEventListener("content", (e) => {
+        const data = JSON.parse(e.data);
+        append("Agent: " + data.content);
+      });
+
+      source.addEventListener("complete", (e) => {
+        const data = JSON.parse(e.data);
+        append(data.message, "complete");
+        stopStream("Completed");
+      });
+
+      source.onerror = () => {
+        if (source?.readyState === EventSource.CLOSED) return;
+        append("Connection error", "error");
+        stopStream("Connection error");
+      };
+
+      messageEl.value = "";
+    }
+
+    sendBtn.onclick = send;
+    stopBtn.onclick = () => stopStream("Stopped");
+    messageEl.addEventListener("keydown", e => {
+      if (e.key === "Enter") send();
+    });
+  </script>
+</body>
+</html>

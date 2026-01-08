@@ -16,6 +16,9 @@ This example demonstrates how to use multiple exporters simultaneously with Agen
 ## Running
 
 ```bash
+# Install dependencies
+uv pip install -r requirements.txt
+
 uv run multi_demo.py
 ```
 

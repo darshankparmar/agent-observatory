@@ -29,6 +29,9 @@ You must have an OpenTelemetry backend running
 (e.g. Collector, Jaeger, Tempo).
 
 ```bash
+# Install dependencies
+uv pip install -r requirements.txt
+
 uv run otel_integration.py
 ```
 
