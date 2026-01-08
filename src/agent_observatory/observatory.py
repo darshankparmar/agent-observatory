@@ -1,7 +1,7 @@
 import asyncio
 
 from .context import AgentContext, set_current_session
-from .exporters.base import Exporter
+from .exporters import Exporter, MultiExporter
 from .exporters.worker import (
     ExporterWorker,
     ExporterWorkerProtocol,
@@ -16,7 +16,9 @@ class Observatory:
     Manages the lifecycle of agent sessions and ensures events are correctly exported.
     """
 
-    def __init__(self, exporter: Exporter, *, inline: bool = False) -> None:
+    def __init__(
+        self, exporter: Exporter | list[Exporter] | MultiExporter, *, inline: bool = False
+    ) -> None:
         """
         Initialize the observatory.
 
@@ -25,16 +27,20 @@ class Observatory:
             inline: If True, exports happen synchronously on the same thread (ideal for CLI/scripts).
                    If False, exports happen on a background thread.
         """
-        self._exporter = exporter
+        self._exporter: Exporter | MultiExporter
+        if isinstance(exporter, list):
+            self._exporter = MultiExporter(exporter)
+        else:
+            self._exporter = exporter
         self._inline = inline
 
         self._worker: ExporterWorkerProtocol
         self._worker_task: asyncio.Task[None] | None = None
 
         if inline:
-            self._worker = InlineExporterWorker(exporter)
+            self._worker = InlineExporterWorker(self._exporter)
         else:
-            self._worker = ExporterWorker(exporter)
+            self._worker = ExporterWorker(self._exporter)
 
     async def start(self) -> None:
         if self._inline:

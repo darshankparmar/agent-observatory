@@ -5,6 +5,7 @@ from .exporters import (
     Exporter,
     FileExporter,
     JSONExporter,
+    MultiExporter,
     OpenTelemetryExporter,
 )
 from .observatory import Observatory
@@ -19,6 +20,7 @@ __all__ = [
     "trace_tool_call",
     "trace_llm_call",
     "Exporter",
+    "MultiExporter",
     "ConsoleExporter",
     "FileExporter",
     "JSONExporter",
