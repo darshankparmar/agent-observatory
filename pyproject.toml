@@ -1,6 +1,6 @@
 [project]
 name = "agent-observatory"
-version = "0.1.1"
+version = "0.1.2"
 description = "Observability primitives for AI agents (tracing and streaming introspection)"
 readme = "README.md"
 requires-python = ">=3.10"
