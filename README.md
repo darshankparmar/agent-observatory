@@ -117,7 +117,7 @@ Streaming events:
       │
       ▼
 ┌────────────────────────┐
-│ Exporter               │
+│ Exporter(s)            │
 │  JSON | OTEL | Console │
 │  File | Custom         │
 └────────────────────────┘
@@ -276,6 +276,34 @@ with obs.start_session(ctx) as session:
     with session.span("plan", kind="agent_step"):
         pass
 ```
+
+### Multiple Exporters
+
+Agent Observatory supports using multiple exporters simultaneously:
+
+```python
+from agent_observatory import (
+    ConsoleExporter,
+    FileExporter,
+    Observatory,
+    OpenTelemetryExporter,
+    Exporter,
+)
+
+# Use multiple exporters
+exporters = list[Exporter][
+    ConsoleExporter(),                  # Immediate feedback
+    FileExporter("logs/traces.jsonl"),  # Persistent logging
+    OpenTelemetryExporter(tracer),      # Production monitoring
+]
+
+obs = Observatory(exporter=exporters, inline=True)
+```
+
+**Key Features:**
+- **Error Isolation**: Failure in one exporter doesn't affect others
+- **Flexible Configuration**: Mix console, file, and OTEL exporters
+- **Backward Compatible**: Single exporter usage unchanged
 
 ## CLI Tool
 
