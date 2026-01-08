@@ -259,7 +259,7 @@ When reporting bugs, include:
 * No magic globals
 * No silent background work
 
-This is infrastructure code — predictability matters more than elegance.
+This is infrastructure code - predictability matters more than elegance.
 
 ---
 

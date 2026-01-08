@@ -1,6 +1,8 @@
-import pytest
 from typing import Any
-from agent_observatory import Observatory, AgentContext
+
+import pytest
+
+from agent_observatory import AgentContext, Observatory
 
 
 def test_span_error_is_recorded(

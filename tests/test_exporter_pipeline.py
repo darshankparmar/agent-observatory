@@ -1,4 +1,4 @@
-from agent_observatory import Observatory, AgentContext
+from agent_observatory import AgentContext, Observatory
 from agent_observatory.exporters.base import Exporter
 
 

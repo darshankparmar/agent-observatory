@@ -1,10 +1,9 @@
-from __future__ import annotations
-
 import asyncio
-from typing import Optional, Protocol
+from typing import Any, Protocol
+
+from agent_observatory.internal.logging import log_internal_error
 
 from .base import Exporter
-from agent_observatory.internal.logging import log_internal_error
 
 
 class ExporterWorkerProtocol(Protocol):
@@ -12,7 +11,7 @@ class ExporterWorkerProtocol(Protocol):
     Minimal protocol shared by all exporter workers.
     """
 
-    def enqueue(self, payload: dict) -> None: ...
+    def enqueue(self, payload: dict[str, Any]) -> None: ...
 
 
 class AsyncExporterWorkerProtocol(ExporterWorkerProtocol, Protocol):
@@ -32,7 +31,7 @@ class ExporterWorker:
     def __init__(self, exporter: Exporter, max_queue_size: int = 100) -> None:
         self._exporter = exporter
         self._queue: asyncio.Queue[dict] = asyncio.Queue(maxsize=max_queue_size)
-        self._task: Optional[asyncio.Task[None]] = None
+        self._task: asyncio.Task[None] | None = None
         self._running = False
 
     async def start(self) -> None:
@@ -65,7 +64,7 @@ class ExporterWorker:
         try:
             self._queue.put_nowait(payload)
         except asyncio.QueueFull:
-            log_internal_error("export queue full — dropping trace")
+            log_internal_error("export queue full - dropping trace")
 
 
 class InlineExporterWorker:

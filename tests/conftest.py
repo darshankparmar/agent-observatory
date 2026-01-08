@@ -1,15 +1,16 @@
-import pytest
-from typing import Dict, Any
+from typing import Any
 
-from agent_observatory import Observatory, AgentContext
+import pytest
+
+from agent_observatory import AgentContext, Observatory
 from agent_observatory.exporters.base import Exporter
 
 
 class InMemoryExporter(Exporter):
     def __init__(self) -> None:
-        self.payloads: list[Dict[str, Any]] = []
+        self.payloads: list[dict[str, Any]] = []
 
-    def export(self, payload: Dict[str, Any]) -> None:
+    def export(self, payload: dict[str, Any]) -> None:
         self.payloads.append(payload)
 
 

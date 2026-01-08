@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import Any, Dict
+from typing import Any
 
 
 class Exporter:
@@ -13,5 +11,5 @@ class Exporter:
     - Must be safe to call from any thread / event loop.
     """
 
-    def export(self, payload: Dict[str, Any]) -> None:
+    def export(self, payload: dict[str, Any]) -> None:
         raise NotImplementedError

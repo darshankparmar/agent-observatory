@@ -1,6 +1,9 @@
 import asyncio
 import functools
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
+
+from .context import get_current_session
 
 # Type variable for the decorated function
 F = TypeVar("F", bound=Callable[..., Any])
@@ -10,7 +13,11 @@ def trace_agent_step(name: str) -> Callable[[F], F]:
     """
     Decorator to trace a function as an agent step.
 
-    Tries to find an 'obs' or 'session' argument, or 'self.obs'/'self.session'.
+    Heuristic:
+    1. Check 'obs' or 'session' in kwargs.
+    2. Check 'self.obs' or 'self.session' in first arg.
+    3. Check ambient session in ContextVars.
+
     Supports both sync and async functions.
     """
 
@@ -20,7 +27,7 @@ def trace_agent_step(name: str) -> Callable[[F], F]:
             @functools.wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
                 session = _find_session(args, kwargs)
-                if session:
+                if session and hasattr(session, "agent_step"):
                     with session.agent_step(name):
                         return await func(*args, **kwargs)
                 return await func(*args, **kwargs)
@@ -31,7 +38,7 @@ def trace_agent_step(name: str) -> Callable[[F], F]:
             @functools.wraps(func)
             def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
                 session = _find_session(args, kwargs)
-                if session:
+                if session and hasattr(session, "agent_step"):
                     with session.agent_step(name):
                         return func(*args, **kwargs)
                 return func(*args, **kwargs)
@@ -53,7 +60,7 @@ def trace_tool_call(name: str) -> Callable[[F], F]:
             @functools.wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
                 session = _find_session(args, kwargs)
-                if session:
+                if session and hasattr(session, "tool_call"):
                     with session.tool_call(name):
                         return await func(*args, **kwargs)
                 return await func(*args, **kwargs)
@@ -64,8 +71,41 @@ def trace_tool_call(name: str) -> Callable[[F], F]:
             @functools.wraps(func)
             def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
                 session = _find_session(args, kwargs)
-                if session:
+                if session and hasattr(session, "tool_call"):
                     with session.tool_call(name):
+                        return func(*args, **kwargs)
+                return func(*args, **kwargs)
+
+            return sync_wrapper  # type: ignore
+
+    return decorator
+
+
+def trace_llm_call(name: str) -> Callable[[F], F]:
+    """
+    Decorator to trace a function as an LLM call.
+    Supports both sync and async functions.
+    """
+
+    def decorator(func: F) -> F:
+        if asyncio.iscoroutinefunction(func):
+
+            @functools.wraps(func)
+            async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+                session = _find_session(args, kwargs)
+                if session and hasattr(session, "llm_call"):
+                    with session.llm_call(name):
+                        return await func(*args, **kwargs)
+                return await func(*args, **kwargs)
+
+            return async_wrapper  # type: ignore
+        else:
+
+            @functools.wraps(func)
+            def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
+                session = _find_session(args, kwargs)
+                if session and hasattr(session, "llm_call"):
+                    with session.llm_call(name):
                         return func(*args, **kwargs)
                 return func(*args, **kwargs)
 
@@ -76,7 +116,7 @@ def trace_tool_call(name: str) -> Callable[[F], F]:
 
 def _find_session(args: tuple, kwargs: dict) -> Any | None:
     """
-    Heuristic to find an AgentSession in args or kwargs.
+    Heuristic to find an AgentSession in args, kwargs or ambient context.
     """
     # 1. Check known kwargs
     if "session" in kwargs:
@@ -88,8 +128,9 @@ def _find_session(args: tuple, kwargs: dict) -> Any | None:
     if args:
         first_arg = args[0]
         if hasattr(first_arg, "session"):
-            return getattr(first_arg, "session")
+            return first_arg.session
         if hasattr(first_arg, "obs"):
-            return getattr(first_arg, "obs")
+            return first_arg.obs
 
-    return None
+    # 3. Check ContextVars
+    return get_current_session()

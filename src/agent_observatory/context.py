@@ -1,19 +1,17 @@
-from __future__ import annotations
-
 from contextvars import ContextVar, Token
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 @dataclass(frozen=True)
 class AgentContext:
     session_id: str
     agent_id: str
-    user_id: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    user_id: str | None = None
+    metadata: dict[str, Any] | None = None
 
 
-_current_session: ContextVar[object | None] = ContextVar(
+_current_session: ContextVar[Any] = ContextVar(
     "current_session",
     default=None,
 )
@@ -23,16 +21,17 @@ _current_span: ContextVar[str | None] = ContextVar(
 )
 
 
-def get_current_session() -> object | None:
+def get_current_session() -> Any:
     return _current_session.get()
 
 
-def set_current_session(session: object) -> Token[object | None]:
+def set_current_session(session: Any) -> Token[Any]:
     return _current_session.set(session)
 
 
-def reset_current_session(token: Token[object | None]) -> None:
-    _current_session.reset(token)
+def reset_current_session(token: Token[Any] | None) -> None:
+    if token is not None:
+        _current_session.reset(token)
 
 
 def get_current_span() -> str | None:

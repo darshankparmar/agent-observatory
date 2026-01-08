@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from opentelemetry import trace
 from opentelemetry.context import Context
@@ -31,7 +29,7 @@ class OpenTelemetryExporter(Exporter):
     # -----------------------------------------------------
     # Export entrypoint
     # -----------------------------------------------------
-    def export(self, payload: Dict[str, Any]) -> None:
+    def export(self, payload: dict[str, Any]) -> None:
         """
         Translate an Agent Observatory session envelope into
         OpenTelemetry spans and events.
@@ -40,13 +38,13 @@ class OpenTelemetryExporter(Exporter):
         agent execution.
         """
         try:
-            events: List[Dict[str, Any]] = payload.get("events", [])
+            events: list[dict[str, Any]] = payload.get("events", [])
 
             # span_id -> OTEL Span
-            spans: Dict[str, Span] = {}
+            spans: dict[str, Span] = {}
 
             # span_id -> parent_span_id
-            parents: Dict[str, Optional[str]] = {}
+            parents: dict[str, str | None] = {}
 
             # -------------------------------------------------
             # Pass 1: collect parent relationships
@@ -139,7 +137,7 @@ class OpenTelemetryExporter(Exporter):
     # -----------------------------------------------------
     # Helpers
     # -----------------------------------------------------
-    def _map_kind(self, kind: Optional[str]) -> SpanKind:
+    def _map_kind(self, kind: str | None) -> SpanKind:
         return {
             "agent_step": SpanKind.INTERNAL,
             "llm_call": SpanKind.CLIENT,

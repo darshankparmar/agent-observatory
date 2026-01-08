@@ -7,11 +7,10 @@ Demonstrates:
 - ordered streaming events
 
 Run with:
-    uv run streaming_agent.py
+    uv run stream_processing.py
 """
 
-from agent_observatory import AgentContext, Observatory
-from agent_observatory.exporters.json import JSONExporter
+from agent_observatory import AgentContext, JSONExporter, Observatory
 
 
 def run_streaming_agent() -> None:

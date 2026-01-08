@@ -9,8 +9,6 @@ It shows how to:
 - preserve ordering
 - associate events with spans
 
----
-
 ## Typical Use Cases
 
 - token streaming
@@ -18,15 +16,11 @@ It shows how to:
 - tool output streams
 - real-time agent feedback
 
----
-
 ## Running
 
 ```bash
-uv run streaming_agent.py
-````
-
----
+uv run stream_processing.py
+```
 
 ## Key Takeaway
 

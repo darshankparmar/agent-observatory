@@ -1,5 +1,6 @@
 from typing import Any
-from agent_observatory import Observatory, AgentContext
+
+from agent_observatory import AgentContext, Observatory
 
 
 def test_flush_happens_on_session_exit(

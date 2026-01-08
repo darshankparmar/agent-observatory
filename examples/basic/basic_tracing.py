@@ -7,11 +7,10 @@ Demonstrates:
 - basic span usage
 
 Run with:
-    uv run simple_agent.py
+    uv run basic_tracing.py
 """
 
-from agent_observatory import AgentContext, Observatory
-from agent_observatory.exporters.json import JSONExporter
+from agent_observatory import AgentContext, JSONExporter, Observatory
 
 
 def run_agent() -> None:

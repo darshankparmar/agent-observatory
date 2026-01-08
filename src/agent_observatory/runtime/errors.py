@@ -1,10 +1,8 @@
-from __future__ import annotations
-
 import traceback
-from typing import Any, Dict, Optional
+from typing import Any
 
 
-def serialize_error(exc: Exception | None) -> Optional[Dict[str, Any]]:
+def serialize_error(exc: Exception | None) -> dict[str, Any] | None:
     if exc is None:
         return None
 

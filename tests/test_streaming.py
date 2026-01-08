@@ -1,5 +1,6 @@
 from typing import Any
-from agent_observatory import Observatory, AgentContext
+
+from agent_observatory import AgentContext, Observatory
 
 
 def test_high_frequency_streaming(

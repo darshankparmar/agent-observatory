@@ -10,13 +10,12 @@ This file is imported by the LiveKit server and agent code.
 """
 
 from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 
-from agent_observatory import Observatory
-from agent_observatory.exporters.otel import OpenTelemetryExporter
+from agent_observatory import Observatory, OpenTelemetryExporter
 
 
 def configure_otel() -> None:

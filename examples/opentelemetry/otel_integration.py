@@ -12,22 +12,20 @@ Requirements:
 - OTLP endpoint available at http://127.0.0.1:4317
 
 Run with:
-    uv run otel_demo.py
+    uv run otel_integration.py
 """
 
 import asyncio
 import random
-
 from importlib.metadata import version
 
 from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 
-from agent_observatory import AgentContext, Observatory
-from agent_observatory.exporters.otel import OpenTelemetryExporter
+from agent_observatory import AgentContext, Observatory, OpenTelemetryExporter
 
 
 # ---------------------------------------------------------

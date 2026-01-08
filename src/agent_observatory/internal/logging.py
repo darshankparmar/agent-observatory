@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 
 # Internal logger for Agent Observatory (library-controlled, fail-open)

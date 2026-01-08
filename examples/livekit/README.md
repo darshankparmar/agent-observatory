@@ -10,15 +10,11 @@ It demonstrates:
 - structured metrics events
 - separation of observability and business logic
 
----
-
 ## File Overview
 
-- `server.py` — LiveKit server entrypoint
-- `agent.py` — agent logic with observability
-- `observability.py` — OpenTelemetry + Observatory setup
-
----
+- [`server.py`](server.py): LiveKit server entrypoint
+- [`agent.py`](agent.py): agent logic with observability
+- [`observability.py`](observability.py): OpenTelemetry + Observatory setup
 
 ## Execution Model
 
@@ -27,8 +23,6 @@ This example uses **server-style execution**:
 - one LiveKit RTC session == one Agent Observatory session
 - sessions flush automatically on exit
 - OpenTelemetry is configured once per process
-
----
 
 ## Running
 
@@ -40,9 +34,7 @@ Before running, ensure:
 
 ```bash
 uv run server.py console
-````
-
----
+```
 
 ## Key Takeaway
 

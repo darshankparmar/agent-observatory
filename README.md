@@ -116,10 +116,11 @@ Streaming events:
 └─────┬─────────────────┘
       │
       ▼
-┌───────────────────────┐
-│ Exporter              │
-│  JSON | OTEL | Custom │
-└───────────────────────┘
+┌────────────────────────┐
+│ Exporter               │
+│  JSON | OTEL | Console │
+│  File | Custom         │
+└────────────────────────┘
 ```
 
 
@@ -186,33 +187,56 @@ class Exporter:
         ...
 ```
 
+### Built-in Exporters
 
-### JSON Exporter
+#### JSON Exporter
 
 Useful for debugging and local inspection.
 
 ```python
-from agent_observatory.exporters.json import JsonExporter
+from agent_observatory import JSONExporter
+
+exporter = JSONExporter()
+obs = Observatory(exporter=exporter, inline=True)
 ```
 
+#### Console Exporter
 
-### OpenTelemetry Exporter
+Provides immediate, pretty-printed terminal feedback for development.
+
+```python
+from agent_observatory import ConsoleExporter
+
+exporter = ConsoleExporter()
+obs = Observatory(exporter=exporter, inline=True)
+```
+
+#### File Exporter
+
+Writes traces to disk in JSONL format, compatible with the `obs-view` CLI tool.
+
+```python
+from agent_observatory import FileExporter
+
+exporter = FileExporter("logs/traces.jsonl")
+obs = Observatory(exporter=exporter, inline=True)
+```
+
+#### OpenTelemetry Exporter
 
 Agent Observatory integrates with OpenTelemetry **without owning global state**.
 
-#### Design Contract (Critical)
+##### Design Contract (Critical)
 
 > Agent Observatory **does not configure OpenTelemetry**.
 > Applications must configure the `TracerProvider`.
 
 This is intentional and required for:
+- auto-instrumentation
+- framework compatibility
+- production safety
 
-* auto-instrumentation
-* framework compatibility
-* production safety
-
-
-#### OpenTelemetry Example (Recommended)
+##### OpenTelemetry Example (Recommended)
 
 ```python
 from opentelemetry import trace
@@ -249,17 +273,58 @@ ctx = AgentContext(
 )
 
 with obs.start_session(ctx) as session:
-    with session.agent_step("plan"):
+    with session.span("plan", kind="agent_step"):
         pass
 ```
 
+## CLI Tool
+
+Agent Observatory includes a CLI tool for viewing JSONL trace files:
+
+```bash
+# View a trace file
+obs-view logs/traces.jsonl
+
+# Tail a trace file in real-time
+obs-view -t logs/traces.jsonl
+```
+
+The CLI provides:
+- Formatted trace visualization
+- Real-time tailing support
+- Graceful error handling
+- Optional Rich-based rendering
+
+## Decorators
+
+Agent Observatory provides decorators for automatic tracing:
+
+```python
+from agent_observatory import trace_agent_step, trace_tool_call, trace_llm_call
+
+@trace_agent_step("planning")
+def plan_response():
+    # Automatically traced as agent_step
+    pass
+
+@trace_tool_call("search")
+def web_search(query: str):
+    # Automatically traced as tool_call
+    pass
+
+@trace_llm_call("gpt-4")
+async def call_llm(prompt: str):
+    # Automatically traced as llm_call
+    pass
+```
+
+Decorators work with both sync and async functions and automatically detect the active session.
 
 ## Timestamp Semantics
 
-* Internal event timestamps use a **monotonic clock**
-* Used for ordering and duration
-
-Exporters (e.g. OTEL) are responsible for mapping timestamps to wall-clock time if needed.
+- Internal event timestamps use **wall-clock nanoseconds** for global correlation
+- Duration measurements use **monotonic clock** for accuracy
+- All timestamps are ISO-8601 formatted in exports
 
 
 ## Failure Semantics
@@ -295,10 +360,25 @@ Use it if you are building:
 * LiveKit / real-time agents
 * tool-heavy autonomous workflows
 
+## Installation
+
+```bash
+# Core only (zero dependencies)
+pip install agent-observatory
+
+# With OpenTelemetry
+pip install agent-observatory[otel]
+
+# With CLI tool
+pip install agent-observatory[cli]
+
+# All extras
+pip install agent-observatory[all]
+```
 
 ## Versioning & Stability
 
-* `v0.x` — APIs may evolve
+* `v0.x` - APIs may evolve
 * Core design principles are stable
 * Exporter contract is stable
 * Inline vs async semantics are stable

@@ -5,20 +5,17 @@ Agent Observatory in different execution models and environments.
 
 Each example is intentionally minimal and highlights **one core concept at a time**.
 
----
-
 ## Example Overview
 
 ### `basic/`
-Minimal inline usage.
 
-- inline execution mode
-- single agent session
-- basic spans
+Minimal usage of spans and exporters.
+
+- [`basic_tracing.py`](basic/basic_tracing.py): Sync scripting mode.
+- [`realtime_debug.py`](basic/realtime_debug.py): **New** Live pretty-print feedback.
+- [`file_logging.py`](basic/file_logging.py): **New** JSONL logging for the `obs-view` CLI.
 
 **Start here** if you’re new to Agent Observatory.
-
----
 
 ### `streaming/`
 Streaming-first observability.
@@ -29,8 +26,6 @@ Streaming-first observability.
 
 Use this for token streams, audio, or real-time agent output.
 
----
-
 ### `opentelemetry/`
 OpenTelemetry integration.
 
@@ -39,8 +34,6 @@ OpenTelemetry integration.
 - zero global state ownership
 
 Recommended for production observability stacks.
-
----
 
 ### `livekit/`
 Real-world LiveKit agent example.
@@ -51,8 +44,6 @@ Real-world LiveKit agent example.
 - realistic production setup
 
 This is the most advanced example.
-
----
 
 ## Running Examples
 
@@ -66,3 +57,4 @@ Inline examples can be run directly:
 
 ```bash
 uv run <example>.py
+```

@@ -9,9 +9,10 @@ This example demonstrates:
 """
 
 import logging
+from typing import Any
 
+from agent import MyAgent
 from dotenv import load_dotenv
-
 from livekit.agents import (
     AgentServer,
     AgentSession,
@@ -21,12 +22,11 @@ from livekit.agents import (
     metrics,
     room_io,
 )
-from livekit.plugins import cartesia, deepgram, silero, openai
+from livekit.plugins import cartesia, deepgram, openai, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
+from observability import configure_otel, create_observatory
 
 from agent_observatory import AgentContext
-from observability import configure_otel, create_observatory
-from agent import MyAgent
 
 logger = logging.getLogger("server")
 
@@ -54,7 +54,7 @@ server.setup_fnc = prewarm
 
 
 @server.rtc_session()
-async def entrypoint(ctx: JobContext):
+async def entrypoint(ctx: JobContext) -> None:
     """
     LiveKit RTC session entrypoint.
 
@@ -96,7 +96,7 @@ async def entrypoint(ctx: JobContext):
         usage_collector = metrics.UsageCollector()
 
         @session.on("metrics_collected")
-        def _on_metrics_collected(ev):
+        def _on_metrics_collected(ev: Any) -> None:
             """
             Capture LiveKit usage metrics and attach them
             as structured observability events.

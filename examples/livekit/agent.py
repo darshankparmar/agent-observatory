@@ -9,6 +9,7 @@ This example demonstrates:
 """
 
 import logging
+from typing import Any
 
 from livekit.agents import Agent, RunContext
 from livekit.agents.llm import function_tool
@@ -17,7 +18,7 @@ logger = logging.getLogger("agent")
 
 
 class MyAgent(Agent):
-    def __init__(self, obs_session):
+    def __init__(self, obs_session: Any) -> None:
         """
         Initialize the agent.
 
@@ -26,13 +27,12 @@ class MyAgent(Agent):
         """
         super().__init__(
             instructions=(
-                "Your name is Kelly. You interact via voice. "
-                "Be concise, friendly and clear."
+                "Your name is Kelly. You interact via voice. Be concise, friendly and clear."
             )
         )
         self.obs = obs_session
 
-    async def on_enter(self):
+    async def on_enter(self) -> None:
         """
         Called when the agent becomes active.
 
@@ -49,7 +49,7 @@ class MyAgent(Agent):
         location: str,
         latitude: str,
         longitude: str,
-    ):
+    ) -> str:
         """
         Example tool call with observability instrumentation.
 

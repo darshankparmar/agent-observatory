@@ -1,12 +1,15 @@
-from __future__ import annotations
-
 from contextvars import Token
-from typing import Any, Dict, Literal
+from typing import Any, Literal
 
 from .context import reset_current_span, set_current_span
 
 
 class SpanContext:
+    """
+    A context manager representing a logical period of work (a span) in an agent run.
+    Spans can be nested to create parent-child relationships.
+    """
+
     def __init__(self, span_id: str, session: Any) -> None:
         self.span_id = span_id
         self._session = session
@@ -15,7 +18,7 @@ class SpanContext:
     def _emit_event(
         self,
         event: str,
-        attributes: Dict[str, Any] | None = None,
+        attributes: dict[str, Any] | None = None,
     ) -> None:
         self._session._emit_stream_event(
             span_id=self.span_id,
@@ -26,7 +29,7 @@ class SpanContext:
     def event(
         self,
         name: str,
-        attributes: Dict[str, Any] | None = None,
+        attributes: dict[str, Any] | None = None,
     ) -> None:
         """Emit a structured event within this span."""
         self._emit_event(name, attributes)
@@ -53,6 +56,11 @@ class SpanContext:
 
 
 class StreamSpan:
+    """
+    A persistent reference to a span context designed for high-frequency event streaming.
+    Unlike SpanContext, it does not manage ambient context via ContextVars.
+    """
+
     def __init__(self, span_id: str, session: Any) -> None:
         self.span_id = span_id
         self._session = session
@@ -60,7 +68,7 @@ class StreamSpan:
     def _emit_event(
         self,
         event: str,
-        attributes: Dict[str, Any] | None = None,
+        attributes: dict[str, Any] | None = None,
     ) -> None:
         self._session._emit_stream_event(
             span_id=self.span_id,
@@ -71,7 +79,7 @@ class StreamSpan:
     def event(
         self,
         name: str,
-        attributes: Dict[str, Any] | None = None,
+        attributes: dict[str, Any] | None = None,
     ) -> None:
         """Emit a structured event within this stream."""
         self._emit_event(name, attributes)

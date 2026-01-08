@@ -1,11 +1,17 @@
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from contextvars import Token
+from typing import Any
 
 from .buffering.ring_buffer import RingBuffer
 from .context import get_current_span, reset_current_session
 from .events import SCHEMA_VERSION, TraceEvent
+from .exporters.worker import ExporterWorkerProtocol
 from .internal.logging import log_internal_error
-from .runtime.clock import now
+from .runtime.clock import (
+    format_ns,
+    mono_time_ns,
+    wall_time_iso,
+    wall_time_ns,
+)
 from .runtime.errors import serialize_error
 from .runtime.ids import new_event_id, new_span_id, new_trace_id
 from .spans import SpanContext, StreamSpan
@@ -13,17 +19,17 @@ from .spans import SpanContext, StreamSpan
 DEFAULT_EVENT_BUFFER_SIZE = 10_000
 
 
-def _iso(ts: float) -> str:
-    return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
-
-
 class SessionState:
+    """
+    Internal state holding session metadata and buffered events.
+    """
+
     def __init__(
         self,
         session_id: str,
         agent_id: str,
-        user_id: Optional[str],
-        metadata: Dict[str, Any],
+        user_id: str | None,
+        metadata: dict[str, Any],
     ) -> None:
         self.session_id = session_id
         self.agent_id = agent_id
@@ -31,14 +37,30 @@ class SessionState:
         self.metadata = metadata
 
         self.trace_id: str = new_trace_id()
-        self.start_time: float = now()
+
+        # EXPORT timestamp (wall clock)
+        self.start_wall_ns: int = wall_time_ns()
+
         self.event_buffer = RingBuffer(capacity=DEFAULT_EVENT_BUFFER_SIZE)
 
+        # span_id -> monotonic start time
+        self._span_mono_start: dict[str, int] = {}
+
+        # span metadata
         self._span_meta: dict[str, dict[str, str]] = {}
 
 
 class AgentSession:
-    def __init__(self, state: SessionState, token, exporter_worker) -> None:
+    """
+    Main session object for tracing agent execution.
+    """
+
+    def __init__(
+        self,
+        state: SessionState,
+        token: Token[Any] | None,
+        exporter_worker: ExporterWorkerProtocol,
+    ) -> None:
         self._state = state
         self._token = token
         self._exporter_worker = exporter_worker
@@ -46,7 +68,12 @@ class AgentSession:
     def __enter__(self) -> "AgentSession":
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: Any,
+    ) -> None:
         reset_current_session(self._token)
         try:
             envelope = self._build_envelope()
@@ -60,7 +87,7 @@ class AgentSession:
         self,
         name: str,
         kind: str,
-        attributes: Optional[Dict[str, Any]] = None,
+        attributes: dict[str, Any] | None = None,
     ) -> SpanContext:
         span_id = new_span_id()
         parent_span_id = get_current_span()
@@ -78,7 +105,7 @@ class AgentSession:
     def agent_step(
         self,
         name: str,
-        attributes: Optional[Dict[str, Any]] = None,
+        attributes: dict[str, Any] | None = None,
     ) -> SpanContext:
         """Helper to create an agent_step span."""
         return self.span(name, kind="agent_step", attributes=attributes)
@@ -86,7 +113,7 @@ class AgentSession:
     def tool_call(
         self,
         name: str,
-        attributes: Optional[Dict[str, Any]] = None,
+        attributes: dict[str, Any] | None = None,
     ) -> SpanContext:
         """Helper to create a tool_call span."""
         return self.span(name, kind="tool_call", attributes=attributes)
@@ -94,7 +121,7 @@ class AgentSession:
     def llm_call(
         self,
         name: str,
-        attributes: Optional[Dict[str, Any]] = None,
+        attributes: dict[str, Any] | None = None,
     ) -> SpanContext:
         """Helper to create an llm_call span."""
         return self.span(name, kind="llm_call", attributes=attributes)
@@ -102,7 +129,7 @@ class AgentSession:
     def stream(
         self,
         name: str,
-        attributes: Optional[Dict[str, Any]] = None,
+        attributes: dict[str, Any] | None = None,
     ) -> StreamSpan:
         span_id = new_span_id()
         parent_span_id = get_current_span()
@@ -119,7 +146,7 @@ class AgentSession:
 
     # ---------------- Internal ----------------
 
-    def _build_envelope(self) -> Dict[str, Any]:
+    def _build_envelope(self) -> dict[str, Any]:
         events = self._state.event_buffer.drain()
 
         return {
@@ -130,13 +157,13 @@ class AgentSession:
                 "user_id": self._state.user_id,
                 "metadata": self._state.metadata,
                 "trace_id": self._state.trace_id,
-                "start_time": _iso(self._state.start_time),
-                "end_time": _iso(now()),
+                "start_time": format_ns(self._state.start_wall_ns),
+                "end_time": wall_time_iso(),
             },
             "events": [
                 {
                     "event_id": e.event_id,
-                    "timestamp": e.timestamp,
+                    "timestamp": format_ns(e.timestamp),
                     "type": e.type,
                     "trace": {
                         "trace_id": e.trace_id,
@@ -152,16 +179,19 @@ class AgentSession:
     def _emit_span_start(
         self,
         span_id: str,
-        parent_span_id: Optional[str],
+        parent_span_id: str | None,
         name: str,
         kind: str,
-        attributes: Dict[str, Any],
+        attributes: dict[str, Any],
     ) -> None:
         try:
+            self._state._span_mono_start[span_id] = mono_time_ns()
+            self._state._span_meta[span_id] = {"name": name, "kind": kind}
+
             self._state.event_buffer.append(
                 TraceEvent(
                     event_id=new_event_id(),
-                    timestamp=now(),
+                    timestamp=wall_time_ns(),
                     type="span_start",
                     trace_id=self._state.trace_id,
                     span_id=span_id,
@@ -173,22 +203,23 @@ class AgentSession:
                     },
                 )
             )
-            self._state._span_meta[span_id] = {"name": name, "kind": kind}
         except Exception as e:
             log_internal_error(f"span_start failed: {e}")
 
     def _emit_span_end(
         self,
         span_id: str,
-        error: Optional[Exception],
+        error: Exception | None,
     ) -> None:
         try:
-            meta = self._state._span_meta.get(span_id, {})
+            mono_start = self._state._span_mono_start.pop(span_id)
+            duration_ns = mono_time_ns() - mono_start
+            meta = self._state._span_meta.pop(span_id, {})
 
             self._state.event_buffer.append(
                 TraceEvent(
                     event_id=new_event_id(),
-                    timestamp=now(),
+                    timestamp=wall_time_ns(),
                     type="span_end",
                     trace_id=self._state.trace_id,
                     span_id=span_id,
@@ -198,12 +229,10 @@ class AgentSession:
                         "kind": meta.get("kind"),
                         "status": "error" if error else "ok",
                         "error": serialize_error(error),
+                        "duration_ns": duration_ns,
                     },
                 )
             )
-
-            self._state._span_meta.pop(span_id, None)
-
         except Exception as e:
             log_internal_error(f"span_end failed: {e}")
 
@@ -211,13 +240,13 @@ class AgentSession:
         self,
         span_id: str,
         event: str,
-        attributes: Dict[str, Any],
+        attributes: dict[str, Any],
     ) -> None:
         try:
             self._state.event_buffer.append(
                 TraceEvent(
                     event_id=new_event_id(),
-                    timestamp=now(),
+                    timestamp=wall_time_ns(),
                     type="stream_event",
                     trace_id=self._state.trace_id,
                     span_id=span_id,
