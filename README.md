@@ -215,7 +215,7 @@ This is useful for:
 * file capture + OTEL export
 * experimentation without changing agent code
 
-Refer to the `examples/multi_exporter/` directory for concrete patterns.
+Refer to the `examples/patterns/multi_exporter/` directory for concrete patterns.
 
 ### Custom Exporters
 

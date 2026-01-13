@@ -53,7 +53,7 @@ Sessions are the **unit of correctness**.
 
 ```
 See:
-- `examples/real_time_agent_runtime/runtime.py`
+- `examples/reference/real_time_agent_runtime/runtime.py`
 ```
 
 ## Agent Instrumentation Semantics
@@ -90,7 +90,7 @@ Spans must be:
 
 ```
 See:
-- `examples/real_time_agent_runtime/agent.py`
+- `examples/reference/real_time_agent_runtime/agent.py`
 ```
 
 ## Streaming Is First-Class
@@ -114,7 +114,7 @@ This is a primary differentiator from traditional tracing.
 
 ```
 See:
-- `examples/real_time_agent_runtime/agent.py` (respond span)
+- `examples/reference/real_time_agent_runtime/agent.py` (respond span)
 - `examples/integrations/livekit/observability.py`
 ```
 
@@ -182,7 +182,7 @@ Framework authors should study these in order:
 1. **Canonical runtime embedding**
 
    ```
-   examples/real_time_agent_runtime/
+   examples/reference/real_time_agent_runtime/
    ```
 
 2. **Real-world real-time integration**
