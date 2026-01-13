@@ -126,12 +126,11 @@ class AgentServicer(agent_service_pb2_grpc.AgentServiceServicer):
 async def serve() -> None:
     """Start the gRPC server."""
     # Create observatory with multiple exporters
-    exporters = list[Exporter](
-        [
-            ConsoleExporter(),
-            FileExporter("logs/grpc_traces.jsonl"),
-        ]
-    )
+    exporters: list[Exporter] = [
+        ConsoleExporter(),
+        FileExporter("logs/grpc_traces.jsonl"),
+    ]
+
     obs = Observatory(exporters=exporters, inline=True)
 
     # Create server

@@ -1,11 +1,24 @@
 # Agent Observatory Examples
 
-This directory contains **small, focused examples** demonstrating how to use
-Agent Observatory in different execution models and environments.
+This directory contains examples demonstrating how Agent Observatory is embedded at different layers of an agent system, from minimal scripts to full runtime integrations.
 
-Each example is intentionally minimal and highlights **one core concept at a time**.
+Some examples are intentionally minimal, while others act as **reference embeddings** for framework and runtime authors.
 
 ## Example Overview
+
+### `real_time_agent_runtime/` (Reference Integration)
+
+A **production-shaped reference embedding** showing how an agent runtime owns session lifecycle, instruments long-running execution and observes high-frequency streams without affecting agent behavior.
+
+This example demonstrates:
+
+- runtime-owned session lifecycle
+- explicit agent semantics (agent steps, tool calls, LLM calls)
+- streaming-first observability under load
+- exporter neutrality
+- fail-open guarantees in practice
+
+**Framework and platform authors should start here.**
 
 ### `basic/`
 
@@ -15,7 +28,7 @@ Minimal usage of spans and exporters.
 - [`realtime_debug.py`](basic/realtime_debug.py): **New** Live pretty-print feedback.
 - [`file_logging.py`](basic/file_logging.py): **New** JSONL logging for the `obs-view` CLI.
 
-**Start here** if you're new to Agent Observatory.
+**Start here** if you're new to Agent Observatory and want a quick, minimal overview.
 
 ### `streaming/`
 Streaming-first observability.
@@ -24,7 +37,7 @@ Streaming-first observability.
 - high-frequency events
 - ordered event emission
 
-Use this for token streams, audio, or real-time agent output.
+Use this for token streams, audio or real-time agent output.
 
 ### `transports/`
 Real-time communication over different protocols.

@@ -25,4 +25,4 @@ uv run stream_processing.py
 ## Key Takeaway
 
 Streams are first-class citizens in Agent Observatory.
-They are designed to be cheap, ordered and export cleanly.
+They are designed to be cheap ordered and export cleanly.

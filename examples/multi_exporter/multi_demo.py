@@ -68,13 +68,11 @@ def create_multi_exporter() -> list[Exporter]:
     tracer = trace.get_tracer("multi-exporter-demo")
     otel_exporter = OpenTelemetryExporter(tracer)
 
-    exporters = list[Exporter](
-        [
-            ConsoleExporter(),
-            FileExporter("logs/demo_traces.jsonl"),
-            otel_exporter,
-        ]
-    )
+    exporters: list[Exporter] = [
+        ConsoleExporter(),
+        FileExporter("logs/demo_traces.jsonl"),
+        otel_exporter,
+    ]
 
     return exporters
 
@@ -130,13 +128,11 @@ def main() -> None:
                     span.event("validation_failed", {"result": result})
 
     # Demonstrate error isolation
-    error_exporter = list[Exporter](
-        [
-            ConsoleExporter(),
-            failing_exporter(),  # This will fail
-            FileExporter("logs/error_demo.jsonl"),
-        ]
-    )
+    error_exporter: list[Exporter] = [
+        ConsoleExporter(),
+        failing_exporter(),  # This will fail
+        FileExporter("logs/error_demo.jsonl"),
+    ]
 
     obs_error = Observatory(exporters=error_exporter, inline=True)
 
