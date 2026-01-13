@@ -5,95 +5,107 @@
 [![License](https://img.shields.io/pypi/l/agent-observatory.svg)](LICENSE)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/darshankparmar/agent-observatory)
 
-**Agent Observatory** is a lightweight, fail-open observability layer for **AI agents and agent-based systems**.
+Agent Observatory is a **fail-open instrumentation layer** that lets you observe **long-running, streaming AI agents** without breaking execution, blocking streams or mutating global observability state.
 
-It provides structured tracing for:
-- agent steps
-- tool calls
-- LLM interactions
-- streaming workflows (tokens, audio, events)
-- hierarchical agent execution
+It provides structured, streaming-safe tracing primitives for:
 
-Agent Observatory is designed as **infrastructure**, not a platform:
-- no UI
-- no storage
-- no vendor lock-in
-- no global side effects
+* agent steps and reasoning phases
+* tool and function calls
+* LLM interactions
+* token / audio / event streams
+* hierarchical, long-running agent execution
 
-It emits **portable trace envelopes** that can be exported to JSON, OpenTelemetry, or custom backends.
+Agent Observatory is intentionally **infrastructure, not a platform**.
+It defines *what* to observe, not *how* to store, visualize or monetize it.
 
+## Who This Is For
 
-## Why Agent Observatory?
+Agent Observatory is primarily designed for:
 
-Modern AI agents are:
-- long-running
-- stateful
-- streaming
-- hierarchical
-- partially autonomous
+* **framework authors** building agent runtimes
+* **platform / infrastructure teams** supporting AI agents
+* **real-time or streaming agent systems** (e.g. LiveKit)
+* teams that already operate an observability stack (OTEL, Jaeger, Tempo, etc.)
 
-Traditional request/response tracing breaks down.
+It is **not** a turnkey observability product for end users.
+Instead, it is meant to be embedded *inside* agent frameworks and systems.
+
+## Why Agent Observatory Exists
+
+Modern AI agents are fundamentally different from request/response services.
+
+They are often:
+
+* long-running
+* stateful
+* streaming
+* hierarchical
+* partially autonomous
+
+Traditional tracing breaks down under these conditions.
 
 Agent Observatory focuses on:
-- **agent runtime introspection**
-- **streaming-first tracing**
-- **minimal overhead**
-- **composability with existing observability stacks**
 
+* **agent-aware semantics** → *clear visibility into agent reasoning and decisions*
+* **streaming-first tracing** → *safe observation of token, audio and event streams*
+* **minimal overhead** → *negligible impact on agent latency*
+* **fail-open execution** → *observability never crashes agents*
+* **clean integration with existing observability stacks** → *use your current OTEL backend*
+
+Think of it as **“OpenTelemetry semantics for agents”**, designed to *complement*, not replace, OTEL.
 
 ## Core Concepts
 
 ### Sessions
-A **session** represents a single agent run.
+
+A session guarantees that **all agent activity is captured or safely dropped**, but never partially exported or allowed to affect execution.
 
 ```python
-with observatory.start_session(ctx) as session:
+with observatory.start_session(ctx) as session:  # ctx = agent / request / runtime context
     ...
 ```
 
 A session:
 
 * owns a trace ID
-* buffers events
+* buffers events in memory
 * flushes automatically on exit
-* never throws on failure (fail-open)
-
+* never raises on failure (fail-open)
 
 ### Spans
 
 Spans represent logical units of agent work.
 
 ```python
-with session.agent_step("plan"):
+with session.span("plan", kind="agent_step"):
     ...
 ```
 
-Supported span helpers include:
+Common span kinds include:
 
-* `agent_step()`
-* `tool_call()`
-* `llm_call()`
-* `stream()`
+* `agent_step`
+* `tool_call`
+* `llm_call`
+* `stream`
 
-Spans can be nested and are tracked via context propagation.
-
+Spans are nestable and tracked via context propagation.
 
 ### Streaming Events
 
-Streams are first-class.
+Streaming is a first-class concern.
 
 ```python
 with session.stream("audio_stream") as stream:
-    stream.event("chunk", {"seq": 1})
+    stream.emit_event("chunk", {"seq": 1})
 ```
+Streaming events are buffered and ordered in-memory, allowing high-frequency emission without backpressure or await points in agent code.
 
 Streaming events:
 
 * are associated with a span
-* are high-frequency safe
+* are safe for high-frequency emission
 * preserve ordering
-* export cleanly to OTEL span events
-
+* map cleanly to OpenTelemetry span events
 
 ## Architecture Overview
 
@@ -105,78 +117,71 @@ Streaming events:
       ▼
 ┌──────────────┐
 │ AgentSession │
-│  (buffering) │
+│ (buffering)  │
 └─────┬────────┘
-      │ envelope
+      │ trace envelope
       ▼
 ┌───────────────────────┐
 │ Exporter Worker       │
-│                       │
-│  inline  |  async     │
+│  inline | async       │
 └─────┬─────────────────┘
       │
       ▼
 ┌────────────────────────┐
-│ Exporter(s)            │
-│  JSON | OTEL | Console │
-│  File | Custom         │
+│ Exporters              │
+│ JSON | OTEL | Custom   │
 └────────────────────────┘
 ```
 
+This architecture ensures observability is **downstream of agent execution**, never on the critical path.
 
-## Execution Modes (Important)
+## Runtime Integration Modes
 
 Agent Observatory supports **two execution modes**.
 
-### Inline Mode
-
-**Use for:** Scripts, notebooks, tests, examples
+### Inline Mode (Recommended for Scripts & Examples)
 
 ```python
-obs = Observatory(exporters=exporter, inline=True)
+obs = Observatory(exporter=exporter, inline=True)
 
-with obs.start_session(ctx) as session:
+with obs.start_session(ctx):
     ...
-# automatic flush on exit
 ```
-
-**Characteristics**
 
 * synchronous
 * deterministic
 * exporter called immediately
-* ideal for short-lived processes
+* ideal for CLIs, tests, notebooks, short-lived agents
 
-
-### Server Mode (Long-Running Processes)
-**Use for:** Production agents, servers, multi-session apps
+### Server Mode (Long-Running Agents)
 
 ```python
-obs = Observatory(exporters)  # inline=False
-await obs.start()             # start background worker
+obs = Observatory(exporter)
+await obs.start()
 
-# ... handle many sessions ...
+# handle many concurrent sessions
 
-await obs.shutdown()          # graceful shutdown
+await obs.shutdown()
 ```
 
-**Characteristics**
-
-* background worker
+* background exporter worker
 * buffered exporting
 * backpressure handling
-* designed for long-running agents
+* designed for servers and agent hosts
 
-⚠️ **Important:** Server mode requires explicit shutdown. Use inline mode for short scripts.
+Sessions may be created concurrently **after** `start()` is called.
 
+⚠️ Server mode requires explicit shutdown to flush buffered sessions.
 
 ## Exporters
+
+Exporters are intentionally simple: they receive a fully materialized session trace and must never influence agent behavior.
 
 ### Exporter Contract
 
 All exporters must:
 
-* be **synchronous**
+* be synchronous
 * never raise
 * fail open
 * accept a full session envelope
@@ -187,230 +192,83 @@ class Exporter:
         ...
 ```
 
-### Built-in Exporters
+### Reference Exporters
 
-#### JSON Exporter
+Agent Observatory ships with **minimal reference exporters** to demonstrate integration patterns. They are not intended to be production observability solutions.
 
-Useful for debugging and local inspection.
+* JSON exporter (debugging, inspection)
+* file-based logging
+* OpenTelemetry integration
+* simple console / debug exporters
 
-```python
-from agent_observatory import JSONExporter
+These are intentionally lightweight and designed as **reference implementations**, not opinionated solutions.
 
-exporter = JSONExporter()
-obs = Observatory(exporters=exporter, inline=True)
-```
-
-#### Console Exporter
-
-Provides immediate, pretty-printed terminal feedback for development.
-
-```python
-from agent_observatory import ConsoleExporter
-
-exporter = ConsoleExporter()
-obs = Observatory(exporters=exporter, inline=True)
-```
-
-#### File Exporter
-
-Writes traces to disk in JSONL format, compatible with the `obs-view` CLI tool.
-
-```python
-from agent_observatory import FileExporter
-
-exporter = FileExporter("logs/traces.jsonl")
-obs = Observatory(exporters=exporter, inline=True)
-```
-
-#### OpenTelemetry Exporter
-
-Agent Observatory integrates with OpenTelemetry **without owning global state**.
-
-##### Design Contract (Critical)
-
-> Agent Observatory **does not configure OpenTelemetry**.
-> Applications must configure the `TracerProvider`.
-
-This is intentional and required for:
-- auto-instrumentation
-- framework compatibility
-- production safety
-
-##### OpenTelemetry Example (Recommended)
-
-```python
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-
-from agent_observatory import Observatory, AgentContext
-from agent_observatory.exporters.otel import OpenTelemetryExporter
-
-
-provider = TracerProvider(
-    resource=Resource.create({"service.name": "agent-demo"})
-)
-provider.add_span_processor(
-    SimpleSpanProcessor(
-        OTLPSpanExporter(
-            endpoint="http://127.0.0.1:4317",
-            insecure=True,
-        )
-    )
-)
-trace.set_tracer_provider(provider)
-
-tracer = trace.get_tracer("agent-demo")
-exporter = OpenTelemetryExporter(tracer)
-
-obs = Observatory(exporters=exporter, inline=True)
-
-ctx = AgentContext(
-    session_id="demo-session",
-    agent_id="demo-agent",
-)
-
-with obs.start_session(ctx) as session:
-    with session.span("plan", kind="agent_step"):
-        pass
-```
+> For concrete usage examples, see the `examples/` directory.
 
 ### Multiple Exporters
 
-Agent Observatory supports using multiple exporters simultaneously:
+Agent Observatory supports exporting the same session to **multiple exporters**.
 
-```python
-from agent_observatory import (
-    ConsoleExporter,
-    FileExporter,
-    Observatory,
-    OpenTelemetryExporter,
-    Exporter,
-)
+This is useful for:
 
-# Use multiple exporters
-exporters = list[Exporter][
-    ConsoleExporter(),                  # Immediate feedback
-    FileExporter("logs/traces.jsonl"),  # Persistent logging
-    OpenTelemetryExporter(tracer),      # Production monitoring
-]
+* local debugging + production telemetry
+* file capture + OTEL export
+* experimentation without changing agent code
 
-obs = Observatory(exporters=exporters, inline=True)
-```
+Refer to the `examples/multi_exporter/` directory for concrete patterns.
 
-**Key Features:**
-- **Error Isolation**: Failure in one exporter doesn't affect others
-- **Flexible Configuration**: Mix console, file, and OTEL exporters
-- **Backward Compatible**: Single exporter usage unchanged
+### Custom Exporters
 
-## CLI Tool
+Because exporters operate on a fully materialized session envelope, writing a custom exporter is straightforward.
 
-Agent Observatory includes a CLI tool for viewing JSONL trace files:
+Typical use cases include:
 
-```bash
-# View a trace file
-obs-view logs/traces.jsonl
-
-# Tail a trace file in real-time
-obs-view -t logs/traces.jsonl
-```
-
-The CLI provides:
-- Formatted trace visualization
-- Real-time tailing support
-- Graceful error handling
-- Optional Rich-based rendering
-
-## Decorators
-
-Agent Observatory provides decorators for automatic tracing:
-
-```python
-from agent_observatory import trace_agent_step, trace_tool_call, trace_llm_call
-
-@trace_agent_step("planning")
-def plan_response():
-    # Automatically traced as agent_step
-    pass
-
-@trace_tool_call("search")
-def web_search(query: str):
-    # Automatically traced as tool_call
-    pass
-
-@trace_llm_call("gpt-4")
-async def call_llm(prompt: str):
-    # Automatically traced as llm_call
-    pass
-```
-
-Decorators work with both sync and async functions and automatically detect the active session.
-
-## Timestamp Semantics
-
-- Internal event timestamps use **wall-clock nanoseconds** for global correlation
-- Duration measurements use **monotonic clock** for accuracy
-- All timestamps are ISO-8601 formatted in exports
-
+* sending traces to internal systems
+* domain-specific aggregation
+* bridging to non-OTEL backends
 
 ## Failure Semantics
 
 Agent Observatory is **fail-open by design**.
 
-* exporter failures do not crash agents
-* queue overflows drop traces
-* internal errors are logged only
+* exporter failures never crash agents
+* queue overflows drop traces (oldest first)
+* internal errors are swallowed (optionally surfaced via debug logging)
 * agent execution is never blocked
 
-This is intentional.
+These behaviors are **contractual guarantees**. Breaking them is considered a bug.
 
+## What Agent Observatory Is Not
 
-## What Agent Observatory Is NOT
+* ❌ not a tracing backend
+* ❌ not a UI
+* ❌ not a metrics platform
+* ❌ not a logging framework
+* ❌ not opinionated about storage
 
-* ❌ Not a tracing backend
-* ❌ Not a UI
-* ❌ Not a metrics system
-* ❌ Not a logging framework
-* ❌ Not opinionated about storage
+It is a **semantic and runtime observability primitive**.
 
-It is a **runtime observability primitive**.
-
-
-## When to Use Agent Observatory
-
-Use it if you are building:
-
-* AI agents
-* multi-step reasoning systems
-* streaming LLM pipelines
-* LiveKit / real-time agents
-* tool-heavy autonomous workflows
+For explicit design boundaries, see [`docs/design/non-goals.md`](docs/design/non-goals.md).
 
 ## Installation
 
 ```bash
-# Core only (zero dependencies)
+# Core (zero required dependencies)
 uv pip install agent-observatory
 
-# With OpenTelemetry
+# With OpenTelemetry exporter
 uv pip install agent-observatory[otel]
 
-# With CLI tool
-uv pip install agent-observatory[cli]
-
-# All extras
+# All extras (examples, dev tools)
 uv pip install agent-observatory[all]
 ```
 
 ## Versioning & Stability
 
-* `v0.x` - APIs may evolve
-* Core design principles are stable
-* Exporter contract is stable
-* Inline vs async semantics are stable
-
+* `v0.x`: APIs may evolve
+* core execution model is stable
+* exporter contract is stable
+* inline vs async semantics are stable
 
 ## Contributing
 
@@ -424,7 +282,6 @@ Please respect:
 * minimal dependencies
 
 See `CONTRIBUTING.md`.
-
 
 ## Feedback Welcome
 

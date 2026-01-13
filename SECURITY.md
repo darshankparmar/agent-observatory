@@ -38,7 +38,7 @@ The following are considered security-relevant:
 
 The following are **explicitly out of scope**:
 
-- vulnerabilities in OpenTelemetry, Jaeger, or external backends
+- vulnerabilities in OpenTelemetry, Jaeger or external backends
 - security of exported data once it leaves the process
 - encryption in transit or at rest (handled by exporters / infrastructure)
 - application-level authentication or authorization
