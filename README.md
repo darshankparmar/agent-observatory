@@ -248,7 +248,7 @@ These behaviors are **contractual guarantees**. Breaking them is considered a bu
 
 It is a **semantic and runtime observability primitive**.
 
-For explicit design boundaries, see [`docs/design/non-goals.md`](docs/design/non-goals.md).
+For explicit design boundaries, see `docs/design/non-goals.md`.
 
 ## Installation
 
@@ -282,6 +282,8 @@ Please respect:
 * minimal dependencies
 
 See `CONTRIBUTING.md`.
+
+Framework and runtime maintainers should see `docs/framework-authors.md` for integration guidance.
 
 ## Feedback Welcome
 
